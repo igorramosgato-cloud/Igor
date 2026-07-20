@@ -24,11 +24,15 @@ GAPS CONHECIDOS (não implementados neste esqueleto — evoluir conforme necess�
     meses — ajuste manualmente se o salário variou.
   - Reflexo de horas extras: usa uma média informada pelo usuário e um
     divisor/dias úteis padrão, não o histórico real de ponto.
-  - Rescisão indireta, aposentadoria e estabilidades provisórias (gestante,
-    CIPA, acidentado) — cada uma tem regras próprias não cobertas aqui.
-  - Desconto simplificado de IRRF (25% do teto da tabela) como alternativa às
-    deduções legais — o cálculo abaixo usa apenas dedução por dependente.
-  - Geração de PDF e integração com planilha de clientes.
+  - Aposentadoria (rescisão por aposentadoria não gera multa de FGTS nem
+    aviso, mas tem regras próprias de comunicação não cobertas aqui).
+  - Estabilidades provisórias: a indenização estimada usa só os dias
+    restantes do período estabilitário mais longo, sem novos reflexos de
+    13º/férias sobre esse período — é uma estimativa mínima, não um cálculo
+    definitivo (consulte jurídico antes de agir sobre o alerta).
+  - Geração de PDF (recibo_pdf.py) e integração com planilha de clientes
+    (planilha_clientes.py) usam campos e nomes de colunas fixos — adapte ao
+    layout real da sua planilha de clientes.
   - O evento S-2299 gerado é um esqueleto: os códigos de rubrica (codRubr)
     dependem da tabela de rubricas (S-1010) de cada empresa e não são
     preenchidos aqui.
@@ -73,6 +77,12 @@ TABELA_IRRF = [
 ]
 DEDUCAO_POR_DEPENDENTE_IRRF = 189.59  # ATUALIZAR
 
+# ATUALIZAR — Desconto simplificado mensal de IRRF (25% do limite máximo da
+# tabela progressiva mensal): substitui todas as deduções legais (dependentes,
+# pensão, INSS complementar) quando for mais vantajoso para o contribuinte. A
+# fonte pagadora é obrigada a aplicar o método que resultar em menor retenção.
+DESCONTO_SIMPLIFICADO_IRRF_MENSAL = 607.20
+
 # ATUALIZAR — Redutor do Art. 3º-A da Lei 9.250/95 (incluído pela Lei
 # 15.270/2025), em vigor desde 01/01/2026: zera o IRRF devido para quem ganha
 # até R$ 5.000,00/mês e reduz linearmente o imposto até R$ 7.350,00/mês.
@@ -96,6 +106,7 @@ MOTIVO_DESLIGAMENTO_ESOCIAL = {
     "pedido_demissao": "33",
     "justa_causa": "31",
     "acordo_484a": "20",
+    "rescisao_indireta": "32",
 }
 
 
@@ -126,14 +137,23 @@ def calcular_redutor_irrf_lei_15270(rendimento_tributavel: float) -> float:
     return round(max(redutor, 0.0), 2)
 
 
-def calcular_irrf(base: float, dependentes: int = 0) -> float:
-    base_ajustada = base - (dependentes * DEDUCAO_POR_DEPENDENTE_IRRF)
+def _aplicar_tabela_irrf(base_ajustada: float) -> float:
     for limite, aliquota, deducao in TABELA_IRRF:
         if base_ajustada <= limite:
-            valor_tabela = max(base_ajustada * aliquota - deducao, 0.0)
-            redutor = calcular_redutor_irrf_lei_15270(base)
-            return round(max(valor_tabela - redutor, 0.0), 2)
+            return max(base_ajustada * aliquota - deducao, 0.0)
     return 0.0
+
+
+def calcular_irrf(base: float, dependentes: int = 0) -> float:
+    """IRRF mensal, usando o menor valor entre deduções legais (dependentes)
+    e o desconto simplificado — a fonte pagadora deve aplicar o que for mais
+    vantajoso ao contribuinte —, já líquido do redutor da Lei 15.270/2025.
+    """
+    irrf_deducoes_legais = _aplicar_tabela_irrf(base - (dependentes * DEDUCAO_POR_DEPENDENTE_IRRF))
+    irrf_desconto_simplificado = _aplicar_tabela_irrf(base - DESCONTO_SIMPLIFICADO_IRRF_MENSAL)
+    valor_tabela = min(irrf_deducoes_legais, irrf_desconto_simplificado)
+    redutor = calcular_redutor_irrf_lei_15270(base)
+    return round(max(valor_tabela - redutor, 0.0), 2)
 
 
 def calcular_valor_parcela_seguro_desemprego(media_salarial: float) -> float:
@@ -167,6 +187,32 @@ def calcular_numero_parcelas_seguro_desemprego(meses_trabalhados: int, numero_so
     return 3
 
 
+def verificar_estabilidades(d) -> list:
+    """Alerta se a dispensa (com ou sem justa causa) ocorre dentro de um
+    período de estabilidade provisória. A dispensa nesse caso é, em regra,
+    nula — reintegração ou indenização do período são cabíveis; não se aplica
+    a acordo Art. 484-A, pedido de demissão ou término normal de experiência.
+    """
+    if d.tipo_rescisao not in ("sem_justa_causa", "justa_causa", "rescisao_indireta"):
+        return []
+
+    alertas = []
+    estabilidades = [
+        ("gestante (Art. 10, II, 'b', ADCT)", d.estabilidade_gestante_dt_fim),
+        ("dirigente sindical/CIPA (Art. 10, II, 'a', ADCT)", d.estabilidade_cipa_dt_fim),
+        ("acidentária (Art. 118, Lei 8.213/91)", d.estabilidade_acidentario_dt_fim),
+    ]
+    for nome, dt_fim in estabilidades:
+        if dt_fim is not None and d.data_desligamento < dt_fim:
+            alertas.append(
+                f"Dispensa dentro do período de estabilidade {nome}, vigente até "
+                f"{dt_fim.strftime('%d/%m/%Y')}. Dispensa sem motivo compatível com a "
+                f"estabilidade é presumidamente nula — avalie reintegração antes de "
+                f"homologar; a indenização abaixo é apenas uma estimativa mínima."
+            )
+    return alertas
+
+
 # ---------------------------------------------------------------------------
 # DADOS DE ENTRADA
 # ---------------------------------------------------------------------------
@@ -176,7 +222,7 @@ class DadosRescisao:
     salario_base: float
     data_admissao: date
     data_desligamento: date
-    tipo_rescisao: str  # "sem_justa_causa" | "pedido_demissao" | "justa_causa" | "acordo_484a" | "termino_experiencia"
+    tipo_rescisao: str  # "sem_justa_causa" | "pedido_demissao" | "justa_causa" | "acordo_484a" | "termino_experiencia" | "rescisao_indireta"
     aviso_previo: str = "indenizado"  # "indenizado" | "trabalhado" | "nao_aplicavel"
     ferias_vencidas: bool = False
     dependentes_irrf: int = 0
@@ -199,8 +245,17 @@ class DadosRescisao:
     dias_uteis_mes_referencia: int = 25
     dias_repouso_mes_referencia: int = 5  # domingos + feriados no mês de referência
 
-    # Seguro-desemprego: só relevante para tipo_rescisao == "sem_justa_causa".
+    # Seguro-desemprego: só relevante para tipo_rescisao == "sem_justa_causa"
+    # e "rescisao_indireta".
     numero_solicitacoes_seguro_desemprego_anteriores: int = 0
+
+    # Estabilidades provisórias: informe a data-fim de cada uma que se aplique
+    # (None se não houver). Se a dispensa (sem ou com justa causa) ocorrer
+    # antes dessa data, o cálculo gera um alerta de risco e uma indenização
+    # estimada mínima do período estabilitário remanescente.
+    estabilidade_gestante_dt_fim: Optional[date] = None  # Art. 10, II, "b", ADCT
+    estabilidade_cipa_dt_fim: Optional[date] = None  # Art. 10, II, "a", ADCT
+    estabilidade_acidentario_dt_fim: Optional[date] = None  # Art. 118, Lei 8.213/91
 
 
 # ---------------------------------------------------------------------------
@@ -235,8 +290,10 @@ def calcular_rescisao(d: DadosRescisao) -> dict:
     dias_trabalhados_mes = d.data_desligamento.day
     add_provento("Saldo de salário", valor_dia * dias_trabalhados_mes)
 
-    # 2. Aviso prévio (só se aplicável ao tipo de rescisão)
-    tem_aviso = d.tipo_rescisao in ("sem_justa_causa", "acordo_484a")
+    # 2. Aviso prévio (só se aplicável ao tipo de rescisão). Rescisão indireta
+    # (Art. 483 CLT) gera os mesmos direitos financeiros de uma dispensa sem
+    # justa causa, por jurisprudência consolidada do TST.
+    tem_aviso = d.tipo_rescisao in ("sem_justa_causa", "acordo_484a", "rescisao_indireta")
     dias_aviso = 0
     if tem_aviso:
         anos_completos = relativedelta(d.data_desligamento, d.data_admissao).years
@@ -299,6 +356,26 @@ def calcular_rescisao(d: DadosRescisao) -> dict:
                 indenizacao,
             )
 
+    # --- Estabilidades provisórias: alerta de risco + indenização estimada
+    # mínima do período estabilitário remanescente mais longo (não soma
+    # estabilidades concorrentes, nem novos reflexos de 13º/férias sobre
+    # esse período — ver GAPS CONHECIDOS no cabeçalho do arquivo).
+    resultado["alertas_risco"] = verificar_estabilidades(d)
+    dias_estabilidade_restantes = 0
+    if d.tipo_rescisao in ("sem_justa_causa", "justa_causa", "rescisao_indireta"):
+        for dt_fim in (
+            d.estabilidade_gestante_dt_fim,
+            d.estabilidade_cipa_dt_fim,
+            d.estabilidade_acidentario_dt_fim,
+        ):
+            if dt_fim is not None and d.data_desligamento < dt_fim:
+                dias_estabilidade_restantes = max(dias_estabilidade_restantes, (dt_fim - d.data_desligamento).days)
+    if dias_estabilidade_restantes > 0:
+        add_provento(
+            f"Indenização estimada do período estabilitário ({dias_estabilidade_restantes} dias — ver alerta de risco)",
+            valor_dia_reflexos * dias_estabilidade_restantes,
+        )
+
     # --- FGTS: depósito do mês da rescisão (saldo de salário + 13º) e do
     #     período de projeção do aviso indenizado, somados ao saldo já
     #     depositado, formam a base da multa de 40%/20%.
@@ -319,17 +396,18 @@ def calcular_rescisao(d: DadosRescisao) -> dict:
         "base_para_multa": round(base_fgts_multa, 2),
     }
 
-    if d.tipo_rescisao == "sem_justa_causa":
+    if d.tipo_rescisao in ("sem_justa_causa", "rescisao_indireta"):
         add_provento("Multa 40% FGTS", base_fgts_multa * 0.40)
     elif d.tipo_rescisao == "acordo_484a":
         add_provento("Multa 20% FGTS (acordo Art. 484-A)", base_fgts_multa * 0.20)
     # pedido_demissao, justa_causa, término normal de experiência: sem multa
 
-    # --- Seguro-desemprego (estimativa): só para dispensa sem justa causa.
-    # Considera apenas o vínculo desta rescisão como período aquisitivo —
-    # ajuste manualmente se houver outros vínculos formais no período.
+    # --- Seguro-desemprego (estimativa): dispensa sem justa causa ou
+    # rescisão indireta. Considera apenas o vínculo desta rescisão como
+    # período aquisitivo — ajuste manualmente se houver outros vínculos
+    # formais no período.
     seguro_desemprego = {"elegivel": False, "numero_parcelas": 0, "valor_parcela": 0.0, "valor_total_estimado": 0.0}
-    if d.tipo_rescisao == "sem_justa_causa":
+    if d.tipo_rescisao in ("sem_justa_causa", "rescisao_indireta"):
         rel_vinculo = relativedelta(d.data_desligamento, d.data_admissao)
         meses_trabalhados_vinculo = rel_vinculo.years * 12 + rel_vinculo.months
         numero_parcelas = calcular_numero_parcelas_seguro_desemprego(
@@ -416,6 +494,10 @@ def gerar_evento_esocial_s2299(d: DadosRescisao, resultado: dict) -> dict:
 
 def imprimir_resultado(r: dict):
     print(f"\n{'='*50}\nTIPO DE RESCISÃO: {r['tipo_rescisao']}\n{'='*50}")
+    if r.get("alertas_risco"):
+        print("\n*** ALERTAS DE RISCO ***")
+        for alerta in r["alertas_risco"]:
+            print(f"  - {alerta}")
     print("\nPROVENTOS:")
     for item in r["rubricas"]:
         print(f"  {item['rubrica']:<45} R$ {item['valor']:>10.2f}")
