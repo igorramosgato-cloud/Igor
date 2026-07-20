@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Histórico — Planejamento Financeiro{% endblock %}
+{% block content %}
+  <div class="card">
+    <h2>Puxar snapshot do Pluggy</h2>
+    {% if erro %}<div class="erro">{{ erro }}</div>{% endif %}
+    <form method="post" action="{{ url_for('snapshot') }}">
+      <label for="item_ids">Item IDs do Pluggy (separados por vírgula)</label>
+      <input type="text" id="item_ids" name="item_ids" placeholder="item-id-1, item-id-2">
+      <button type="submit">Puxar patrimônio agora</button>
+    </form>
+    <p class="aviso">
+      Precisa de PLUGGY_CLIENT_ID e PLUGGY_CLIENT_SECRET configurados como
+      variáveis de ambiente no servidor.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Evolução do patrimônio</h2>
+    {% if not historico %}
+      <p>Nenhum snapshot registrado ainda.</p>
+    {% else %}
+      <table>
+        <thead>
+          <tr><th>Data</th><th>Contas</th><th>Investimentos</th><th>Total</th></tr>
+        </thead>
+        <tbody>
+          {% for h in historico %}
+            <tr>
+              <td>{{ h.data }}</td>
+              <td>R$ {{ "%.2f"|format(h.total_contas) }}</td>
+              <td>R$ {{ "%.2f"|format(h.total_investimentos) }}</td>
+              <td>R$ {{ "%.2f"|format(h.patrimonio_total) }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% set variacao = historico[-1].patrimonio_total - historico[0].patrimonio_total %}
+      <p class="aviso">Variação desde o primeiro snapshot: R$ {{ "%.2f"|format(variacao) }}</p>
+    {% endif %}
+  </div>
+{% endblock %}

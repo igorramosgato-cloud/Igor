@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Meta — Planejamento Financeiro{% endblock %}
+{% block content %}
+  <div class="card">
+    <h2>Simulador de meta</h2>
+    {% if erro %}<div class="erro">{{ erro }}</div>{% endif %}
+    <form method="post">
+      <label for="data_meta">Data da meta (ex: data do casamento)</label>
+      <input type="date" id="data_meta" name="data_meta" value="{{ valores.data_meta }}" required>
+
+      <label for="valor_meta">Valor total da meta (R$)</label>
+      <input type="number" step="0.01" id="valor_meta" name="valor_meta" value="{{ valores.valor_meta }}" required>
+
+      <label for="ja_guardado">Já guardado pra essa meta (R$)</label>
+      <input type="number" step="0.01" id="ja_guardado" name="ja_guardado" value="{{ valores.ja_guardado }}">
+
+      <label for="sobra_mensal">Sobra mensal total, pra dividir (R$)</label>
+      <input type="number" step="0.01" id="sobra_mensal" name="sobra_mensal" value="{{ valores.sobra_mensal }}" required>
+
+      <label for="taxa_aa">Taxa de retorno anual esperada do investimento (ex: 0.11 = 11% a.a.)</label>
+      <input type="number" step="0.0001" id="taxa_aa" name="taxa_aa" value="{{ valores.taxa_aa }}" required>
+
+      <button type="submit">Simular</button>
+    </form>
+  </div>
+
+  {% if resultado %}
+    <div class="card resultado">
+      <h3>Resultado</h3>
+      {% if not resultado.viavel %}
+        <div class="erro">{{ resultado.mensagem }}</div>
+        <dl>
+          <dt>Necessário/mês pra meta</dt><dd>R$ {{ "%.2f"|format(resultado.necessario_por_mes_para_meta) }}</dd>
+          <dt>Sobra mensal disponível</dt><dd>R$ {{ "%.2f"|format(resultado.sobra_mensal_total) }}</dd>
+          <dt>Déficit mensal</dt><dd>R$ {{ "%.2f"|format(resultado.deficit_mensal) }}</dd>
+        </dl>
+      {% else %}
+        <dl>
+          <dt>Meses até a meta</dt><dd>{{ resultado.meses_restantes }}</dd>
+          <dt>Necessário guardar/mês p/ meta</dt><dd>R$ {{ "%.2f"|format(resultado.necessario_por_mes_para_meta) }}</dd>
+          <dt>Sobra pra investir/mês</dt><dd>R$ {{ "%.2f"|format(resultado.sobra_para_investir_por_mes) }}</dd>
+          <dt>Saldo investido projetado no fim</dt><dd>R$ {{ "%.2f"|format(resultado.saldo_investido_projetado_no_prazo) }}</dd>
+        </dl>
+        <p class="aviso">
+          Projeção com juros compostos sobre a taxa anual informada — não é garantia
+          de retorno, é só matemática sobre a taxa hipotética.
+        </p>
+      {% endif %}
+    </div>
+  {% endif %}
+{% endblock %}
