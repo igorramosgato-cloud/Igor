@@ -6,28 +6,32 @@ Ferramenta de apoio ao cálculo de verbas rescisórias trabalhistas (CLT).
 Cobre os tipos de rescisão mais comuns (sem justa causa, pedido de demissão,
 justa causa, acordo Art. 484-A e término de contrato de experiência) e as
 verbas típicas: saldo de salário, aviso prévio, 13º e férias proporcionais,
-férias vencidas e multa do FGTS — com os descontos de INSS e IRRF.
+férias vencidas, reflexo de horas extras habituais + DSR, multa do FGTS,
+estimativa de seguro-desemprego e os descontos de INSS e IRRF.
 
-IMPORTANTE: as tabelas de INSS e IRRF abaixo precisam ser conferidas/atualizadas
-todo ano (normalmente em janeiro). Estão marcadas com "# ATUALIZAR" onde isso
-importa. Este script é uma ferramenta de apoio ao cálculo, não substitui a
-conferência humana antes de qualquer pagamento real, nem a legislação/convenção
-coletiva aplicável a cada caso.
+IMPORTANTE: as tabelas de INSS, IRRF e Seguro-Desemprego abaixo precisam ser
+conferidas/atualizadas todo ano (normalmente em janeiro). Estão marcadas com
+"# ATUALIZAR" onde isso importa. Este script é uma ferramenta de apoio ao
+cálculo, não substitui a conferência humana antes de qualquer pagamento real,
+nem a legislação/convenção coletiva aplicável a cada caso.
 
 GAPS CONHECIDOS (não implementados neste esqueleto — evoluir conforme necessário):
   - FGTS: não modela saque-rescisão nem a guia GRRF detalhada, apenas a base
     usada para a multa de 40%/20%.
-  - Seguro-desemprego (elegibilidade e valor das parcelas).
-  - DSR e reflexos de horas extras habituais nas verbas rescisórias.
+  - Seguro-desemprego: a elegibilidade e o nº de meses trabalhados consideram
+    apenas o vínculo desta rescisão (não outros vínculos formais do período
+    aquisitivo), e a média salarial assume salário constante nos últimos 3
+    meses — ajuste manualmente se o salário variou.
+  - Reflexo de horas extras: usa uma média informada pelo usuário e um
+    divisor/dias úteis padrão, não o histórico real de ponto.
   - Rescisão indireta, aposentadoria e estabilidades provisórias (gestante,
     CIPA, acidentado) — cada uma tem regras próprias não cobertas aqui.
-  - Art. 480 CLT (empregado que rescinde antecipadamente contrato de
-    experiência) — só o Art. 479 (rescisão antecipada pelo empregador) está
-    implementado.
   - Desconto simplificado de IRRF (25% do teto da tabela) como alternativa às
     deduções legais — o cálculo abaixo usa apenas dedução por dependente.
-  - Geração de PDF, integração com planilha de clientes e eventos do eSocial
-    (S-2299/S-2399).
+  - Geração de PDF e integração com planilha de clientes.
+  - O evento S-2299 gerado é um esqueleto: os códigos de rubrica (codRubr)
+    dependem da tabela de rubricas (S-1010) de cada empresa e não são
+    preenchidos aqui.
 
 Uso:
     python calculadora_rescisao.py
@@ -42,9 +46,10 @@ from dateutil.relativedelta import relativedelta
 
 # ---------------------------------------------------------------------------
 # TABELAS (ATUALIZAR conforme legislação vigente no ano do cálculo)
-# Conferido em 20/07/2026 com base no salário mínimo/teto do INSS de 2026 e na
-# Lei 15.270/2025 (IRRF). Reconfirme na fonte oficial (gov.br/inss,
-# gov.br/receitafederal) antes de usar em produção.
+# Conferido em 20/07/2026 com base no salário mínimo/teto do INSS de 2026, na
+# Lei 15.270/2025 (IRRF) e na tabela do Seguro-Desemprego vigente desde
+# 11/01/2026. Reconfirme na fonte oficial (gov.br/inss, gov.br/receitafederal,
+# gov.br/trabalho-e-emprego) antes de usar em produção.
 # ---------------------------------------------------------------------------
 
 # ATUALIZAR — Tabela progressiva de INSS 2026 (faixas e alíquotas)
@@ -76,6 +81,22 @@ REDUTOR_IRRF_CONSTANTE = 978.62
 REDUTOR_IRRF_COEFICIENTE = 0.133145
 
 ALIQUOTA_FGTS_MENSAL = 0.08
+
+# ATUALIZAR — Tabela do Seguro-Desemprego (Resolução CODEFAT), vigente desde
+# 11/01/2026: teto R$ 2.518,65, piso de um salário mínimo (R$ 1.621,00).
+SALARIO_MINIMO_2026 = 1621.00
+SEGURO_DESEMPREGO_FAIXA1 = 2222.17
+SEGURO_DESEMPREGO_FAIXA2 = 3703.99
+SEGURO_DESEMPREGO_CONSTANTE_FAIXA2 = 1777.74
+SEGURO_DESEMPREGO_TETO = 2518.65
+
+# ATUALIZAR — Códigos de motivo de desligamento da Tabela 19 do eSocial.
+MOTIVO_DESLIGAMENTO_ESOCIAL = {
+    "sem_justa_causa": "30",
+    "pedido_demissao": "33",
+    "justa_causa": "31",
+    "acordo_484a": "20",
+}
 
 
 def calcular_inss(base: float) -> float:
@@ -115,6 +136,37 @@ def calcular_irrf(base: float, dependentes: int = 0) -> float:
     return 0.0
 
 
+def calcular_valor_parcela_seguro_desemprego(media_salarial: float) -> float:
+    """Valor de cada parcela do seguro-desemprego a partir da média dos
+    últimos 3 salários (Resolução CODEFAT vigente em 2026)."""
+    if media_salarial <= SEGURO_DESEMPREGO_FAIXA1:
+        valor = media_salarial * 0.8
+    elif media_salarial <= SEGURO_DESEMPREGO_FAIXA2:
+        valor = SEGURO_DESEMPREGO_CONSTANTE_FAIXA2 + (media_salarial - SEGURO_DESEMPREGO_FAIXA1) * 0.5
+    else:
+        valor = SEGURO_DESEMPREGO_TETO
+    return round(max(valor, SALARIO_MINIMO_2026), 2)
+
+
+def calcular_numero_parcelas_seguro_desemprego(meses_trabalhados: int, numero_solicitacoes_anteriores: int) -> int:
+    """Número de parcelas conforme meses trabalhados no período aquisitivo e
+    quantas vezes o benefício já foi solicitado antes (Lei 7.998/90)."""
+    if numero_solicitacoes_anteriores <= 0:
+        minimo_meses = 12
+    elif numero_solicitacoes_anteriores == 1:
+        minimo_meses = 9
+    else:
+        minimo_meses = 6
+
+    if meses_trabalhados < minimo_meses:
+        return 0
+    if meses_trabalhados >= 24:
+        return 5
+    if meses_trabalhados >= 12:
+        return 4
+    return 3
+
+
 # ---------------------------------------------------------------------------
 # DADOS DE ENTRADA
 # ---------------------------------------------------------------------------
@@ -129,10 +181,26 @@ class DadosRescisao:
     ferias_vencidas: bool = False
     dependentes_irrf: int = 0
     saldo_fgts_depositado: float = 0.0  # total já depositado na conta do FGTS até o mês anterior
+
     # Só relevante para tipo_rescisao == "termino_experiencia": data prevista
-    # de término do contrato. Se o desligamento ocorrer antes dela por
-    # iniciativa do empregador, gera indenização do Art. 479 CLT.
+    # de término do contrato. Se o desligamento ocorrer antes dela, gera
+    # indenização do Art. 479 CLT (antecipação pelo empregador, padrão) ou do
+    # Art. 480 CLT (antecipação pelo empregado, se quem_antecipou_experiencia
+    # == "empregado").
     data_fim_contrato_experiencia: Optional[date] = None
+    quem_antecipou_experiencia: Optional[str] = None  # "empregador" | "empregado"
+
+    # Horas extras habituais (Súmula 27 TST / OJ 394 SDI-1 TST): integram o
+    # cálculo do aviso prévio, 13º e férias proporcionais/vencidas via DSR.
+    media_horas_extras_mensal: float = 0.0
+    valor_hora_extra: Optional[float] = None  # se None, calcula com divisor e adicional abaixo
+    divisor_hora_normal: float = 220.0  # ajustável por convenção coletiva
+    adicional_hora_extra: float = 0.5  # 50% (Art. 7º, XVI, CF); pode variar por CCT
+    dias_uteis_mes_referencia: int = 25
+    dias_repouso_mes_referencia: int = 5  # domingos + feriados no mês de referência
+
+    # Seguro-desemprego: só relevante para tipo_rescisao == "sem_justa_causa".
+    numero_solicitacoes_seguro_desemprego_anteriores: int = 0
 
 
 # ---------------------------------------------------------------------------
@@ -150,6 +218,19 @@ def calcular_rescisao(d: DadosRescisao) -> dict:
 
     valor_dia = d.salario_base / 30
 
+    # Reflexo de horas extras habituais + DSR (Súmula 27 TST, OJ 394 SDI-1):
+    # integra a base do aviso indenizado, 13º e férias — não o saldo de
+    # salário, que reflete apenas os dias efetivamente trabalhados no mês.
+    valor_hora_extra = d.valor_hora_extra
+    if valor_hora_extra is None:
+        valor_hora_extra = (d.salario_base / d.divisor_hora_normal) * (1 + d.adicional_hora_extra)
+    valor_he_mensal = d.media_horas_extras_mensal * valor_hora_extra
+    dsr_sobre_he = 0.0
+    if valor_he_mensal and d.dias_uteis_mes_referencia:
+        dsr_sobre_he = (valor_he_mensal / d.dias_uteis_mes_referencia) * d.dias_repouso_mes_referencia
+    remuneracao_reflexos = d.salario_base + valor_he_mensal + dsr_sobre_he
+    valor_dia_reflexos = remuneracao_reflexos / 30
+
     # 1. Saldo de salário (dias trabalhados no mês do desligamento)
     dias_trabalhados_mes = d.data_desligamento.day
     add_provento("Saldo de salário", valor_dia * dias_trabalhados_mes)
@@ -161,7 +242,7 @@ def calcular_rescisao(d: DadosRescisao) -> dict:
         anos_completos = relativedelta(d.data_desligamento, d.data_admissao).years
         dias_aviso = min(30 + (3 * anos_completos), 90)
         if d.aviso_previo == "indenizado":
-            valor_aviso = valor_dia * dias_aviso
+            valor_aviso = valor_dia_reflexos * dias_aviso
             if d.tipo_rescisao == "acordo_484a":
                 valor_aviso /= 2
             add_provento(f"Aviso prévio indenizado ({dias_aviso} dias)", valor_aviso)
@@ -186,30 +267,37 @@ def calcular_rescisao(d: DadosRescisao) -> dict:
             meses_13 = meses_no_ano
         else:
             meses_13 = meses_no_ano - 1
-        add_provento(f"13º salário proporcional ({meses_13}/12)", (d.salario_base / 12) * meses_13)
+        add_provento(f"13º salário proporcional ({meses_13}/12)", (remuneracao_reflexos / 12) * meses_13)
 
         # 4. Férias proporcionais + 1/3
         meses_ferias = relativedelta(data_projecao, d.data_admissao).months
-        ferias_prop = (d.salario_base / 12) * meses_ferias
+        ferias_prop = (remuneracao_reflexos / 12) * meses_ferias
         add_provento(f"Férias proporcionais ({meses_ferias}/12) + 1/3", ferias_prop * (4 / 3))
 
     # 5. Férias vencidas + 1/3, se houver (devidas mesmo em justa causa)
     if d.ferias_vencidas:
-        add_provento("Férias vencidas + 1/3", d.salario_base * (4 / 3))
+        add_provento("Férias vencidas + 1/3", remuneracao_reflexos * (4 / 3))
 
-    # 6. Indenização Art. 479 CLT — rescisão antecipada de contrato de
-    # experiência pelo empregador sem justa causa: metade da remuneração a
-    # que o empregado teria direito até o termo do contrato.
+    # 6. Indenização por rescisão antecipada de contrato de experiência:
+    # Art. 479 CLT (empregador antecipa, sem justa causa) ou Art. 480 CLT
+    # (empregado antecipa — vira desconto, devido ao empregador).
     if (
         d.tipo_rescisao == "termino_experiencia"
         and d.data_fim_contrato_experiencia is not None
         and d.data_desligamento < d.data_fim_contrato_experiencia
     ):
         dias_restantes = (d.data_fim_contrato_experiencia - d.data_desligamento).days
-        add_provento(
-            f"Indenização Art. 479 CLT (metade de {dias_restantes} dias restantes)",
-            (valor_dia * dias_restantes) / 2,
-        )
+        indenizacao = (valor_dia_reflexos * dias_restantes) / 2
+        if d.quem_antecipou_experiencia == "empregado":
+            add_desconto(
+                f"Indenização Art. 480 CLT ao empregador (metade de {dias_restantes} dias restantes)",
+                indenizacao,
+            )
+        else:
+            add_provento(
+                f"Indenização Art. 479 CLT (metade de {dias_restantes} dias restantes)",
+                indenizacao,
+            )
 
     # --- FGTS: depósito do mês da rescisão (saldo de salário + 13º) e do
     #     período de projeção do aviso indenizado, somados ao saldo já
@@ -221,7 +309,7 @@ def calcular_rescisao(d: DadosRescisao) -> dict:
     fgts_mes_rescisao = round(base_deposito_mes * ALIQUOTA_FGTS_MENSAL, 2)
     fgts_periodo_aviso_projetado = 0.0
     if tem_aviso and d.aviso_previo == "indenizado":
-        fgts_periodo_aviso_projetado = round(valor_dia * dias_aviso * ALIQUOTA_FGTS_MENSAL, 2)
+        fgts_periodo_aviso_projetado = round(valor_dia_reflexos * dias_aviso * ALIQUOTA_FGTS_MENSAL, 2)
 
     base_fgts_multa = d.saldo_fgts_depositado + fgts_mes_rescisao + fgts_periodo_aviso_projetado
     resultado["fgts"] = {
@@ -236,6 +324,27 @@ def calcular_rescisao(d: DadosRescisao) -> dict:
     elif d.tipo_rescisao == "acordo_484a":
         add_provento("Multa 20% FGTS (acordo Art. 484-A)", base_fgts_multa * 0.20)
     # pedido_demissao, justa_causa, término normal de experiência: sem multa
+
+    # --- Seguro-desemprego (estimativa): só para dispensa sem justa causa.
+    # Considera apenas o vínculo desta rescisão como período aquisitivo —
+    # ajuste manualmente se houver outros vínculos formais no período.
+    seguro_desemprego = {"elegivel": False, "numero_parcelas": 0, "valor_parcela": 0.0, "valor_total_estimado": 0.0}
+    if d.tipo_rescisao == "sem_justa_causa":
+        rel_vinculo = relativedelta(d.data_desligamento, d.data_admissao)
+        meses_trabalhados_vinculo = rel_vinculo.years * 12 + rel_vinculo.months
+        numero_parcelas = calcular_numero_parcelas_seguro_desemprego(
+            meses_trabalhados_vinculo, d.numero_solicitacoes_seguro_desemprego_anteriores
+        )
+        if numero_parcelas > 0:
+            media_salarial = remuneracao_reflexos  # assume salário ~constante nos últimos 3 meses
+            valor_parcela = calcular_valor_parcela_seguro_desemprego(media_salarial)
+            seguro_desemprego = {
+                "elegivel": True,
+                "numero_parcelas": numero_parcelas,
+                "valor_parcela": valor_parcela,
+                "valor_total_estimado": round(valor_parcela * numero_parcelas, 2),
+            }
+    resultado["seguro_desemprego"] = seguro_desemprego
 
     # --- Descontos (INSS e IRRF incidem sobre saldo de salário + 13º; verbas
     #     indenizatórias como aviso, férias e multa FGTS são isentas) ---
@@ -260,6 +369,51 @@ def calcular_rescisao(d: DadosRescisao) -> dict:
     return resultado
 
 
+def gerar_evento_esocial_s2299(d: DadosRescisao, resultado: dict) -> dict:
+    """Monta o esqueleto do evento S-2299 (Desligamento) do eSocial.
+
+    Não substitui a integração real: os códigos de rubrica (codRubr) dependem
+    da tabela de rubricas (evento S-1010) cadastrada por cada empresa e ficam
+    como `None` aqui, para preenchimento posterior.
+    """
+    if d.tipo_rescisao == "termino_experiencia":
+        antecipacao = (
+            d.data_fim_contrato_experiencia is not None
+            and d.data_desligamento < d.data_fim_contrato_experiencia
+        )
+        if not antecipacao:
+            mtv_deslig = "07"  # Término de Contrato a Termo
+        elif d.quem_antecipou_experiencia == "empregado":
+            mtv_deslig = "01"  # Rescisão Antecipada por Iniciativa do Empregado
+        else:
+            mtv_deslig = "02"  # Rescisão Antecipada por Iniciativa do Empregador, Sem Justa Causa
+    else:
+        mtv_deslig = MOTIVO_DESLIGAMENTO_ESOCIAL.get(d.tipo_rescisao)
+
+    return {
+        "evento": "S-2299",
+        "infoDeslig": {
+            "mtvDeslig": mtv_deslig,
+            "dtDeslig": d.data_desligamento.isoformat(),
+            "verbasRescisorias": {
+                "proventos": [
+                    {"descricao": r["rubrica"], "valor": r["valor"], "codRubr": None}
+                    for r in resultado["rubricas"]
+                ],
+                "descontos": [
+                    {"descricao": r["rubrica"], "valor": r["valor"], "codRubr": None}
+                    for r in resultado["descontos"]
+                ],
+            },
+        },
+        "prazo_envio": "vinculado ao prazo de pagamento do Art. 477 CLT (10 dias corridos do desligamento)",
+        "_atencao": (
+            "codRubr precisa ser preenchido conforme a tabela de rubricas (S-1010) "
+            "da empresa; mtvDeslig segue a Tabela 19 do eSocial."
+        ),
+    }
+
+
 def imprimir_resultado(r: dict):
     print(f"\n{'='*50}\nTIPO DE RESCISÃO: {r['tipo_rescisao']}\n{'='*50}")
     print("\nPROVENTOS:")
@@ -272,12 +426,22 @@ def imprimir_resultado(r: dict):
     print(f"  {'Total proventos':<45} R$ {r['total_proventos']:>10.2f}")
     print(f"  {'Total descontos':<45} R$ {r['total_descontos']:>10.2f}")
     print(f"  {'VALOR LÍQUIDO':<45} R$ {r['valor_liquido']:>10.2f}")
+
     fgts = r["fgts"]
-    print(f"\nFGTS (memorando, não incluído no líquido pago em dinheiro, exceto a multa):")
+    print("\nFGTS (memorando, não incluído no líquido pago em dinheiro, exceto a multa):")
     print(f"  Saldo anterior informado                     R$ {fgts['saldo_anterior_informado']:>10.2f}")
     print(f"  Depósito do mês da rescisão                  R$ {fgts['deposito_mes_rescisao']:>10.2f}")
     print(f"  Depósito período de projeção do aviso         R$ {fgts['deposito_periodo_aviso_projetado']:>10.2f}")
     print(f"  Base usada para a multa                      R$ {fgts['base_para_multa']:>10.2f}")
+
+    seguro = r["seguro_desemprego"]
+    print("\nSeguro-desemprego (estimativa):")
+    if seguro["elegivel"]:
+        print(f"  Parcelas: {seguro['numero_parcelas']}  |  Valor por parcela: R$ {seguro['valor_parcela']:.2f}"
+              f"  |  Total estimado: R$ {seguro['valor_total_estimado']:.2f}")
+    else:
+        print("  Não elegível (ou meses trabalhados insuficientes) para este tipo de rescisão.")
+
     print(f"\nPrazo legal de pagamento (Art. 477 CLT): {r['prazo_pagamento'].strftime('%d/%m/%Y')}")
 
 
@@ -295,6 +459,11 @@ if __name__ == "__main__":
         ferias_vencidas=False,
         dependentes_irrf=0,
         saldo_fgts_depositado=6200.00,
+        media_horas_extras_mensal=10,  # 10h extras habituais por mês
     )
     resultado = calcular_rescisao(exemplo)
     imprimir_resultado(resultado)
+
+    import json
+    print("\nEvento eSocial S-2299 (esqueleto):")
+    print(json.dumps(gerar_evento_esocial_s2299(exemplo, resultado), indent=2, ensure_ascii=False, default=str))
