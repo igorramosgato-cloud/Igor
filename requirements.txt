@@ -1,3 +1,4 @@
 python-dateutil
 openpyxl
 reportlab
+requests
