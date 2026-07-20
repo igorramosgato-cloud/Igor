@@ -4,10 +4,12 @@ Calculadora de Verbas Rescisórias
 
 Ferramenta de apoio ao cálculo de verbas rescisórias trabalhistas (CLT).
 Cobre os tipos de rescisão mais comuns (sem justa causa, pedido de demissão,
-justa causa, acordo Art. 484-A e término de contrato de experiência) e as
-verbas típicas: saldo de salário, aviso prévio, 13º e férias proporcionais,
-férias vencidas, reflexo de horas extras habituais + DSR, multa do FGTS,
-estimativa de seguro-desemprego e os descontos de INSS e IRRF.
+justa causa, acordo Art. 484-A, término de contrato de experiência, rescisão
+indireta e aposentadoria) e as verbas típicas: saldo de salário, aviso
+prévio, 13º e férias proporcionais, férias vencidas, reflexo de horas
+extras habituais + DSR, multa e saque-rescisão do FGTS, estimativa de
+seguro-desemprego, alertas de estabilidade provisória e os descontos de
+INSS e IRRF.
 
 IMPORTANTE: as tabelas de INSS, IRRF e Seguro-Desemprego abaixo precisam ser
 conferidas/atualizadas todo ano (normalmente em janeiro). Estão marcadas com
@@ -16,26 +18,31 @@ cálculo, não substitui a conferência humana antes de qualquer pagamento real,
 nem a legislação/convenção coletiva aplicável a cada caso.
 
 GAPS CONHECIDOS (não implementados neste esqueleto — evoluir conforme necessário):
-  - FGTS: não modela saque-rescisão nem a guia GRRF detalhada, apenas a base
-    usada para a multa de 40%/20%.
-  - Seguro-desemprego: a elegibilidade e o nº de meses trabalhados consideram
-    apenas o vínculo desta rescisão (não outros vínculos formais do período
-    aquisitivo), e a média salarial assume salário constante nos últimos 3
-    meses — ajuste manualmente se o salário variou.
+  - FGTS: o valor sacável é uma estimativa (percentual por tipo de rescisão +
+    multa); não modela a guia GRRF detalhada nem substitui a homologação real
+    no FGTS Digital/Conectividade Social.
+  - Seguro-desemprego: a média salarial assume salário constante nos últimos
+    3 meses — ajuste manualmente se o salário variou. Outros vínculos formais
+    no período aquisitivo podem ser somados via
+    `meses_trabalhados_outros_vinculos_periodo`, mas isso é informado pelo
+    usuário, não verificado automaticamente.
   - Reflexo de horas extras: usa uma média informada pelo usuário e um
     divisor/dias úteis padrão, não o histórico real de ponto.
-  - Aposentadoria (rescisão por aposentadoria não gera multa de FGTS nem
-    aviso, mas tem regras próprias de comunicação não cobertas aqui).
-  - Estabilidades provisórias: a indenização estimada usa só os dias
-    restantes do período estabilitário mais longo, sem novos reflexos de
-    13º/férias sobre esse período — é uma estimativa mínima, não um cálculo
-    definitivo (consulte jurídico antes de agir sobre o alerta).
+  - Estabilidades provisórias: a indenização estimada (dias restantes +
+    13º/férias proporcionais desse período) é um piso conservador, não um
+    cálculo definitivo — consulte jurídico antes de agir sobre o alerta;
+    quando há mais de uma estabilidade concorrente, usa só a mais longa.
   - Geração de PDF (recibo_pdf.py) e integração com planilha de clientes
     (planilha_clientes.py) usam campos e nomes de colunas fixos — adapte ao
     layout real da sua planilha de clientes.
-  - O evento S-2299 gerado é um esqueleto: os códigos de rubrica (codRubr)
-    dependem da tabela de rubricas (S-1010) de cada empresa e não são
-    preenchidos aqui.
+  - O evento S-2299 gerado é um esqueleto: `codRubr` só é preenchido se você
+    passar `mapa_rubricas` (a tabela S-1010 da própria empresa) para
+    `gerar_evento_esocial_s2299`; sem isso, fica `None`.
+  - As tabelas de INSS/IRRF/Seguro-Desemprego foram conferidas cruzando
+    várias fontes secundárias (contábeis/jurídicas) nesta sessão, pois o
+    acesso direto ao gov.br (Receita Federal, INSS, MTE) ficou bloqueado
+    (HTTP 403) neste ambiente — vale reconfirmar na fonte oficial antes de
+    usar em produção.
 
 Uso:
     python calculadora_rescisao.py
@@ -107,6 +114,21 @@ MOTIVO_DESLIGAMENTO_ESOCIAL = {
     "justa_causa": "31",
     "acordo_484a": "20",
     "rescisao_indireta": "32",
+    "aposentadoria": "42",
+}
+
+# Percentual do saldo do FGTS liberado para saque conforme o tipo de rescisão
+# (Lei 8.036/90, Art. 20; Art. 484-A, §2º, CLT para o acordo).
+PERCENTUAL_SAQUE_FGTS = {
+    "sem_justa_causa": 1.0,
+    "rescisao_indireta": 1.0,
+    "aposentadoria": 1.0,
+    "acordo_484a": 0.80,
+    "pedido_demissao": 0.0,
+    "justa_causa": 0.0,
+    # Extinção de contrato por prazo determinado (inclusive antecipação) é uma
+    # das hipóteses de movimentação do FGTS do Art. 20, Lei 8.036/90.
+    "termino_experiencia": 1.0,
 }
 
 
@@ -222,7 +244,7 @@ class DadosRescisao:
     salario_base: float
     data_admissao: date
     data_desligamento: date
-    tipo_rescisao: str  # "sem_justa_causa" | "pedido_demissao" | "justa_causa" | "acordo_484a" | "termino_experiencia" | "rescisao_indireta"
+    tipo_rescisao: str  # "sem_justa_causa" | "pedido_demissao" | "justa_causa" | "acordo_484a" | "termino_experiencia" | "rescisao_indireta" | "aposentadoria"
     aviso_previo: str = "indenizado"  # "indenizado" | "trabalhado" | "nao_aplicavel"
     ferias_vencidas: bool = False
     dependentes_irrf: int = 0
@@ -246,8 +268,12 @@ class DadosRescisao:
     dias_repouso_mes_referencia: int = 5  # domingos + feriados no mês de referência
 
     # Seguro-desemprego: só relevante para tipo_rescisao == "sem_justa_causa"
-    # e "rescisao_indireta".
+    # e "rescisao_indireta". `meses_trabalhados_outros_vinculos_periodo` soma
+    # meses de outros vínculos formais dentro da janela de referência (18, 12
+    # ou 6 meses conforme o nº de solicitações anteriores) que não este
+    # contrato — informe se o período aquisitivo não se resume a este vínculo.
     numero_solicitacoes_seguro_desemprego_anteriores: int = 0
+    meses_trabalhados_outros_vinculos_periodo: int = 0
 
     # Estabilidades provisórias: informe a data-fim de cada uma que se aplique
     # (None se não houver). Se a dispensa (sem ou com justa causa) ocorrer
@@ -371,9 +397,18 @@ def calcular_rescisao(d: DadosRescisao) -> dict:
             if dt_fim is not None and d.data_desligamento < dt_fim:
                 dias_estabilidade_restantes = max(dias_estabilidade_restantes, (dt_fim - d.data_desligamento).days)
     if dias_estabilidade_restantes > 0:
+        meses_estabilidade = max(1, round(dias_estabilidade_restantes / 30))
         add_provento(
             f"Indenização estimada do período estabilitário ({dias_estabilidade_restantes} dias — ver alerta de risco)",
             valor_dia_reflexos * dias_estabilidade_restantes,
+        )
+        add_provento(
+            f"13º proporcional estimado do período estabilitário ({meses_estabilidade}/12 — ver alerta de risco)",
+            (remuneracao_reflexos / 12) * meses_estabilidade,
+        )
+        add_provento(
+            f"Férias proporcionais estimadas do período estabilitário ({meses_estabilidade}/12 + 1/3 — ver alerta de risco)",
+            (remuneracao_reflexos / 12) * meses_estabilidade * (4 / 3),
         )
 
     # --- FGTS: depósito do mês da rescisão (saldo de salário + 13º) e do
@@ -396,11 +431,22 @@ def calcular_rescisao(d: DadosRescisao) -> dict:
         "base_para_multa": round(base_fgts_multa, 2),
     }
 
+    valor_multa_fgts = 0.0
     if d.tipo_rescisao in ("sem_justa_causa", "rescisao_indireta"):
-        add_provento("Multa 40% FGTS", base_fgts_multa * 0.40)
+        valor_multa_fgts = round(base_fgts_multa * 0.40, 2)
+        add_provento("Multa 40% FGTS", valor_multa_fgts)
     elif d.tipo_rescisao == "acordo_484a":
-        add_provento("Multa 20% FGTS (acordo Art. 484-A)", base_fgts_multa * 0.20)
+        valor_multa_fgts = round(base_fgts_multa * 0.20, 2)
+        add_provento("Multa 20% FGTS (acordo Art. 484-A)", valor_multa_fgts)
     # pedido_demissao, justa_causa, término normal de experiência: sem multa
+
+    # Saque-rescisão (Art. 20, Lei 8.036/90): estimativa do que pode ser
+    # movimentado na conta — não substitui a homologação real no FGTS Digital.
+    percentual_saque = PERCENTUAL_SAQUE_FGTS.get(d.tipo_rescisao, 0.0)
+    resultado["fgts"]["percentual_saque_estimado"] = percentual_saque
+    resultado["fgts"]["valor_sacavel_estimado"] = round(
+        base_fgts_multa * percentual_saque + valor_multa_fgts, 2
+    )
 
     # --- Seguro-desemprego (estimativa): dispensa sem justa causa ou
     # rescisão indireta. Considera apenas o vínculo desta rescisão como
@@ -409,7 +455,9 @@ def calcular_rescisao(d: DadosRescisao) -> dict:
     seguro_desemprego = {"elegivel": False, "numero_parcelas": 0, "valor_parcela": 0.0, "valor_total_estimado": 0.0}
     if d.tipo_rescisao in ("sem_justa_causa", "rescisao_indireta"):
         rel_vinculo = relativedelta(d.data_desligamento, d.data_admissao)
-        meses_trabalhados_vinculo = rel_vinculo.years * 12 + rel_vinculo.months
+        meses_trabalhados_vinculo = (
+            rel_vinculo.years * 12 + rel_vinculo.months + d.meses_trabalhados_outros_vinculos_periodo
+        )
         numero_parcelas = calcular_numero_parcelas_seguro_desemprego(
             meses_trabalhados_vinculo, d.numero_solicitacoes_seguro_desemprego_anteriores
         )
@@ -447,13 +495,24 @@ def calcular_rescisao(d: DadosRescisao) -> dict:
     return resultado
 
 
-def gerar_evento_esocial_s2299(d: DadosRescisao, resultado: dict) -> dict:
+def _codigo_rubrica(nome: str, mapa: dict) -> Optional[str]:
+    """Casa `nome` com `mapa_rubricas` — primeiro exato, depois pelo texto
+    antes do parênteses (várias rubricas têm sufixos dinâmicos, como
+    "Aviso prévio indenizado (42 dias)")."""
+    if nome in mapa:
+        return mapa[nome]
+    return mapa.get(nome.split(" (")[0].strip())
+
+
+def gerar_evento_esocial_s2299(d: DadosRescisao, resultado: dict, mapa_rubricas: Optional[dict] = None) -> dict:
     """Monta o esqueleto do evento S-2299 (Desligamento) do eSocial.
 
-    Não substitui a integração real: os códigos de rubrica (codRubr) dependem
-    da tabela de rubricas (evento S-1010) cadastrada por cada empresa e ficam
-    como `None` aqui, para preenchimento posterior.
+    Não substitui a integração real. `mapa_rubricas` é opcional: um dict
+    {nome_da_rubrica: codRubr} com a tabela de rubricas (evento S-1010) da
+    própria empresa — se informado, preenche `codRubr`; senão, fica `None`
+    para preenchimento posterior.
     """
+    mapa_rubricas = mapa_rubricas or {}
     if d.tipo_rescisao == "termino_experiencia":
         antecipacao = (
             d.data_fim_contrato_experiencia is not None
@@ -475,19 +534,19 @@ def gerar_evento_esocial_s2299(d: DadosRescisao, resultado: dict) -> dict:
             "dtDeslig": d.data_desligamento.isoformat(),
             "verbasRescisorias": {
                 "proventos": [
-                    {"descricao": r["rubrica"], "valor": r["valor"], "codRubr": None}
+                    {"descricao": r["rubrica"], "valor": r["valor"], "codRubr": _codigo_rubrica(r["rubrica"], mapa_rubricas)}
                     for r in resultado["rubricas"]
                 ],
                 "descontos": [
-                    {"descricao": r["rubrica"], "valor": r["valor"], "codRubr": None}
+                    {"descricao": r["rubrica"], "valor": r["valor"], "codRubr": _codigo_rubrica(r["rubrica"], mapa_rubricas)}
                     for r in resultado["descontos"]
                 ],
             },
         },
         "prazo_envio": "vinculado ao prazo de pagamento do Art. 477 CLT (10 dias corridos do desligamento)",
         "_atencao": (
-            "codRubr precisa ser preenchido conforme a tabela de rubricas (S-1010) "
-            "da empresa; mtvDeslig segue a Tabela 19 do eSocial."
+            "codRubr sem correspondência em mapa_rubricas fica None e precisa ser preenchido "
+            "conforme a tabela de rubricas (S-1010) da empresa; mtvDeslig segue a Tabela 19 do eSocial."
         ),
     }
 
@@ -515,6 +574,8 @@ def imprimir_resultado(r: dict):
     print(f"  Depósito do mês da rescisão                  R$ {fgts['deposito_mes_rescisao']:>10.2f}")
     print(f"  Depósito período de projeção do aviso         R$ {fgts['deposito_periodo_aviso_projetado']:>10.2f}")
     print(f"  Base usada para a multa                      R$ {fgts['base_para_multa']:>10.2f}")
+    print(f"  Saque-rescisão estimado ({fgts['percentual_saque_estimado']*100:.0f}% do saldo + multa)  "
+          f"R$ {fgts['valor_sacavel_estimado']:>10.2f}")
 
     seguro = r["seguro_desemprego"]
     print("\nSeguro-desemprego (estimativa):")
