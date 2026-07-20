@@ -6,15 +6,24 @@ Interface Flask simples pra usar o `planejamento_financeiro.py` sem linha
 de comando: formulário do simulador de meta, histórico de patrimônio e um
 botão pra puxar snapshot via Pluggy.
 
-Rodar:
+Rodar localmente:
     pip install -r requirements.txt --break-system-packages
     python3 app.py
     (abre em http://127.0.0.1:5000)
+
+Rodar em produção (ex: Render, ver render.yaml):
+    gunicorn app:app
+
+Se as variáveis de ambiente APP_USERNAME e APP_PASSWORD estiverem definidas,
+todas as rotas exigem autenticação HTTP Basic — configure-as ao publicar o
+app na internet (este app expõe dados financeiros pessoais e, se conectado,
+credenciais do Pluggy).
 """
 
+import os
 from datetime import date
 
-from flask import Flask, redirect, render_template, request, url_for
+from flask import Flask, Response, redirect, render_template, request, url_for
 
 from planejamento_financeiro import (
     PLUGGY_CLIENT_ID,
@@ -27,6 +36,22 @@ from planejamento_financeiro import (
 )
 
 app = Flask(__name__)
+
+APP_USERNAME = os.environ.get("APP_USERNAME", "")
+APP_PASSWORD = os.environ.get("APP_PASSWORD", "")
+
+
+@app.before_request
+def exigir_autenticacao():
+    if not (APP_USERNAME and APP_PASSWORD):
+        return None  # sem credenciais configuradas: sem proteção (uso local na sua máquina)
+    auth = request.authorization
+    if not auth or auth.username != APP_USERNAME or auth.password != APP_PASSWORD:
+        return Response(
+            "Autenticação necessária.", 401,
+            {"WWW-Authenticate": 'Basic realm="Planejamento Financeiro"'},
+        )
+    return None
 
 
 @app.route("/")
@@ -103,4 +128,4 @@ def snapshot():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="127.0.0.1", debug=True)

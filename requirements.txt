@@ -3,3 +3,4 @@ openpyxl
 reportlab
 requests
 flask
+gunicorn
