@@ -18,11 +18,23 @@ NÃO é recomendação de onde investir — isso depende do seu perfil e, se o
 valor for relevante, vale conversar com um profissional licenciado.
 
 Dependências:
-    pip install requests --break-system-packages
+    pip install -r requirements.txt --break-system-packages
+
+Uso (CLI):
+    python3 planejamento_financeiro.py meta \
+        --data-meta 2027-05-01 --valor-meta 30000 --ja-guardado 5000 \
+        --sobra-mensal 3000 --taxa-aa 0.11
+
+    python3 planejamento_financeiro.py snapshot --item-id SEU_ITEM_ID
+        (precisa de PLUGGY_CLIENT_ID e PLUGGY_CLIENT_SECRET no ambiente)
+
+    python3 planejamento_financeiro.py historico
 """
 
+import argparse
 import os
 import json
+import sys
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -214,23 +226,88 @@ def imprimir_simulacao(r: dict):
 
 
 # =============================================================================
-# EXEMPLO DE USO (valores ilustrativos — troque pelos seus)
+# CLI
 # =============================================================================
 
-if __name__ == "__main__":
-    print("### Simulador de meta (modo manual — sem Pluggy conectado ainda) ###")
-    exemplo = ParametrosMeta(
-        data_hoje=date(2026, 7, 19),
-        data_meta=date(2027, 5, 1),      # ex: data do casamento
-        valor_meta=30000.00,              # ilustrativo
-        ja_guardado_meta=5000.00,         # ilustrativo
-        sobra_mensal_total=3000.00,       # ilustrativo
-        taxa_investimento_aa=0.11,        # ilustrativo — 11% a.a., ajuste pro seu caso
+def cmd_meta(args):
+    p = ParametrosMeta(
+        data_hoje=date.today(),
+        data_meta=date.fromisoformat(args.data_meta),
+        valor_meta=args.valor_meta,
+        ja_guardado_meta=args.ja_guardado,
+        sobra_mensal_total=args.sobra_mensal,
+        taxa_investimento_aa=args.taxa_aa,
     )
-    resultado = simular_divisao(exemplo)
+    resultado = simular_divisao(p)
     imprimir_simulacao(resultado)
+    if args.json:
+        print(json.dumps(resultado, indent=2, ensure_ascii=False))
 
-    print("\n\n### Puxar patrimônio real via Pluggy (requer configuração) ###")
-    print("Descomente e configure item_ids reais quando tiver conectado o Meu Pluggy:")
-    print('# snapshot = puxar_patrimonio_real(item_ids=["seu-item-id-aqui"])')
-    print('# registrar_snapshot(snapshot)')
+
+def cmd_snapshot(args):
+    if not (PLUGGY_CLIENT_ID and PLUGGY_CLIENT_SECRET):
+        print(
+            "Erro: defina as variáveis de ambiente PLUGGY_CLIENT_ID e "
+            "PLUGGY_CLIENT_SECRET (do dashboard.pluggy.ai) antes de rodar este comando.",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+    snapshot = puxar_patrimonio_real(item_ids=args.item_id)
+    registrar_snapshot(snapshot)
+    print(f"Snapshot registrado em {ARQUIVO_HISTORICO}:")
+    print(json.dumps(snapshot, indent=2, ensure_ascii=False))
+
+
+def cmd_historico(args):
+    historico = evolucao_patrimonio()
+    if not historico:
+        print("Nenhum snapshot registrado ainda. Use o comando 'snapshot' primeiro.")
+        return
+    print(f"{'Data':<12}{'Contas':>16}{'Investimentos':>18}{'Patrimônio total':>20}")
+    for h in historico:
+        print(
+            f"{h['data']:<12}{h['total_contas']:>16.2f}"
+            f"{h['total_investimentos']:>18.2f}{h['patrimonio_total']:>20.2f}"
+        )
+    variacao = historico[-1]["patrimonio_total"] - historico[0]["patrimonio_total"]
+    print(f"\nVariação desde o primeiro snapshot: R$ {variacao:,.2f}")
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Planejamento financeiro pessoal: patrimônio, meta e investimento."
+    )
+    sub = parser.add_subparsers(dest="comando", required=True)
+
+    p_meta = sub.add_parser("meta", help="Simula a divisão mensal entre a meta (ex: casamento) e investimento.")
+    p_meta.add_argument("--data-meta", required=True, help="Data da meta, formato AAAA-MM-DD (ex: data do casamento).")
+    p_meta.add_argument("--valor-meta", required=True, type=float, help="Valor total da meta.")
+    p_meta.add_argument("--ja-guardado", type=float, default=0.0, help="Quanto já está guardado pra essa meta.")
+    p_meta.add_argument("--sobra-mensal", required=True, type=float, help="Quanto sobra por mês, no total, pra dividir.")
+    p_meta.add_argument(
+        "--taxa-aa", required=True, type=float,
+        help="Taxa de retorno anual esperada do investimento, ex: 0.11 para 11%% a.a. (você define, não é sugestão).",
+    )
+    p_meta.add_argument("--json", action="store_true", help="Também imprime o resultado em JSON.")
+    p_meta.set_defaults(func=cmd_meta)
+
+    p_snapshot = sub.add_parser("snapshot", help="Puxa patrimônio real via Pluggy e registra no histórico local.")
+    p_snapshot.add_argument(
+        "--item-id", action="append", required=True, dest="item_id",
+        help="ID de uma conexão bancária no Pluggy (repita a flag para mais de uma conexão).",
+    )
+    p_snapshot.set_defaults(func=cmd_snapshot)
+
+    p_historico = sub.add_parser("historico", help="Mostra o histórico de patrimônio já registrado.")
+    p_historico.set_defaults(func=cmd_historico)
+
+    return parser
+
+
+def main():
+    args = build_parser().parse_args()
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()
