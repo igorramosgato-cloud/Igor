@@ -3,3 +3,5 @@ __pycache__/
 .pytest_cache/
 *.pdf
 *.xlsx
+!homologacao/**/*.pdf
+!homologacao/**/*.xlsx
