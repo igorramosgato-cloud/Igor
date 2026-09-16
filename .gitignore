@@ -3,5 +3,15 @@ __pycache__/
 .pytest_cache/
 *.pdf
 *.xlsx
-!homologacao/**/*.pdf
-!homologacao/**/*.xlsx
+
+# Homologação: arquivos físicos reais (podem conter dados pessoais/trabalhistas)
+# nunca são versionados, mesmo quando .pdf/.xlsx já estariam liberados em outro
+# contexto. Ver .claude/rules/homologacao-dados.md.
+homologacao/**/*
+!homologacao/**/
+!homologacao/**/README.md
+!homologacao/**/.gitkeep
+!homologacao/**/manifest.json
+
+# Fixtures de teste só entram quando explicitamente sanitizadas
+# (ver .claude/rules/homologacao-dados.md).

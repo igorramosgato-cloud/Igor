@@ -60,3 +60,4 @@ Ao iniciar uma sessão, execute `/retomar-projeto`. Isso carrega:
 - `.claude/rules/regulatorio.md` — validação de fonte oficial
 - `.claude/rules/art-latex.md` — regras do cliente ART LATEX
 - `.claude/rules/questor-sankhya.md` — integração Questor/Sankhya
+- `.claude/rules/homologacao-dados.md` — proteção de dados em `homologacao/`
