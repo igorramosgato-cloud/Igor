@@ -1,0 +1,47 @@
+{
+  "cliente": "ART LATEX",
+  "unidades": {
+    "filial": {
+      "eventos": [
+        {"codigo": 35, "descricao": "HE 50%", "tipo": "hora"},
+        {"codigo": 49, "descricao": "HE 100%", "tipo": "hora"},
+        {"codigo": 23, "descricao": "Falta", "tipo": "hora"},
+        {"codigo": 29, "descricao": "Atraso", "tipo": "hora"},
+        {"codigo": 25, "descricao": "DSR", "tipo": "hora"},
+        {"codigo": 1955, "descricao": "VR", "tipo": "valor"},
+        {"codigo": 815, "descricao": "VT", "tipo": "valor"},
+        {
+          "codigo": 1524,
+          "descricao": "Cesta",
+          "tipo": "valor",
+          "regra": "R$ 1,00 por colaborador listado"
+        },
+        {"codigo": 806, "descricao": "Farmácia", "tipo": "valor"},
+        {"codigo": 813, "descricao": "Compras", "tipo": "valor"},
+        {"codigo": 96, "descricao": "Adicional Noturno", "tipo": "valor"}
+      ]
+    },
+    "matriz": {
+      "eventos": [
+        {"codigo": 50, "descricao": "HE 100% Noturna", "tipo": "hora"},
+        {
+          "codigo": null,
+          "descricao": "Cesta Básica",
+          "tipo": "valor",
+          "coluna_origem": "E",
+          "coluna_origem_nome": "Desconto",
+          "status": "PENDENTE",
+          "motivo": "Código do evento não confirmado no material consolidado. Não inventar."
+        }
+      ]
+    }
+  },
+  "erros_historicos": [
+    {
+      "codigo": 1603,
+      "competencia": "07/2026",
+      "motivo": "Erro histórico registrado. Não reaproveitar como referência de código de evento."
+    }
+  ],
+  "formato_hora": "H,MM"
+}

@@ -1,0 +1,58 @@
+{
+  "atualizado_em": "2026-09-16",
+  "tarefas": [
+    {
+      "id": "P01",
+      "titulo": "Variáveis + Benefícios ART LATEX → Questor",
+      "status": "blocked",
+      "motivo_bloqueio": "Faltam layout real do importador, planilhas-fonte reais, chave de matching, código do evento Cesta Matriz, versão do conversor e exemplo de importação bem sucedida.",
+      "referencia": "docs/P01_ART_LATEX_QUESTOR.md"
+    },
+    {
+      "id": "P02",
+      "titulo": "Auditoria Questor × Sankhya",
+      "status": "nao_iniciado",
+      "referencia": "docs/P02_AUDITORIA_QUESTOR_SANKHYA.md"
+    },
+    {
+      "id": "P03",
+      "titulo": "Auditoria automática da folha",
+      "status": "nao_iniciado",
+      "referencia": "docs/P03_AUDITORIA_FOLHA.md"
+    },
+    {
+      "id": "P04",
+      "titulo": "Admissões",
+      "status": "nao_iniciado",
+      "referencia": "docs/P04_ADMISSOES.md"
+    },
+    {
+      "id": "P05",
+      "titulo": "Auditoria de consignado",
+      "status": "nao_iniciado",
+      "referencia": "docs/P05_CONSIGNADO.md"
+    },
+    {
+      "id": "P06",
+      "titulo": "eSocial/XML",
+      "status": "nao_iniciado",
+      "referencia": "docs/P06_ESOCIAL_XML.md"
+    },
+    {
+      "id": "P07",
+      "titulo": "Fechamento mensal automatizado",
+      "status": "nao_iniciado",
+      "referencia": "docs/P07_FECHAMENTO_MENSAL.md"
+    },
+    {
+      "id": "P08",
+      "titulo": "Organização documental",
+      "status": "nao_iniciado"
+    },
+    {
+      "id": "P09",
+      "titulo": "Monitoramento CCT/regras",
+      "status": "nao_iniciado"
+    }
+  ]
+}
