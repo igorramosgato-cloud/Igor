@@ -14,7 +14,8 @@ from .cadastro_ativos import RegistroCadastro
 from .canonico import LancamentoCanonico, RegistroOrigemBruto
 from .config import ClienteConfigError, get_evento, is_evento_bloqueado
 from .decimais import DecimalContractError, serializar_decimal_livre, valor_origem_para_decimal
-from .origem_matching import cruzar_por_nome
+from .depara import RegistroDePara
+from .origem_matching import cruzar_com_depara
 from .serializers import InvalidTimeFormatError, serialize_hmm
 
 
@@ -25,18 +26,24 @@ def construir_lancamentos_evento(
     cliente: str,
     competencia: str,
     codigo_evento: int,
+    depara: list[RegistroDePara] | None = None,
 ) -> list[LancamentoCanonico]:
     """Constrói um lançamento canônico por registro de origem, para um
     único evento (podendo combinar registros de Matriz e Filial na mesma
     chamada — a granularidade final é por evento, não por unidade).
 
-    Cada registro passa por: matching (nome -> código), busca da regra do
-    evento na unidade correspondente, serialização conforme o tipo
-    (hora -> H,MM; valor -> Decimal sem arredondamento), e é marcado como
-    válido/inválido/bloqueado. Nunca decide matching ambíguo sozinho —
-    isso já é tratado por `origem_matching.cruzar_por_nome`.
+    Cada registro passa por: matching (nome -> código, nesta ordem: match
+    exato normalizado, depois de-para homologado — ver
+    `origem_matching.cruzar_com_depara`), busca da regra do evento na
+    unidade correspondente, serialização conforme o tipo (hora -> H,MM;
+    valor -> Decimal sem arredondamento), e é marcado como
+    válido/inválido/bloqueado. Nunca decide matching ambíguo sozinho, e
+    nunca usa fuzzy matching automático (`sugestao_fuzzy` é só
+    diagnóstico humano).
     """
-    resultado_matching = cruzar_por_nome([r.nome for r in registros], cadastro)
+    resultado_matching = cruzar_com_depara(
+        [(r.nome, r.unidade) for r in registros], cadastro, depara
+    )
 
     lancamentos = []
     for registro in registros:
@@ -122,6 +129,7 @@ def construir_lancamentos_cesta_basica(
     arquivo_matriz: str,
     arquivo_filial: str,
     valor_por_colaborador: Decimal = Decimal("1"),
+    depara: list[RegistroDePara] | None = None,
 ) -> list[LancamentoCanonico]:
     """Cesta Básica: a aba de origem não tem coluna de valor — o valor é
     R$1,00 por colaborador listado (regra confirmada, ver
@@ -150,5 +158,5 @@ def construir_lancamentos_cesta_basica(
         for nome in nomes_filial
     ]
     return construir_lancamentos_evento(
-        registros, cadastro, config_cliente, cliente, competencia, codigo_evento
+        registros, cadastro, config_cliente, cliente, competencia, codigo_evento, depara
     )

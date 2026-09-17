@@ -3,6 +3,84 @@
 Entradas mais recentes no topo. Formato definido em
 `.claude/skills/registrar-decisao/SKILL.md`.
 
+## 2026-09-17 — Camada de identidade: de-para homologado, fail-closed por evento, quatro decisões fechadas
+
+**Contexto:** com 5 eventos processados e todos `BLOCKED` por nomes não
+encontrados, o usuário tomou quatro decisões de arquitetura para não
+deixar o projeto esperando indefinidamente por itens externos.
+
+**1) Eventos da Matriz sem código — continuam PENDENTE.** Não usar os
+códigos da Filial por analogia. Vale-refeição, Compras, Farmácia e
+Adicional Noturno da Matriz só entram em qualquer exportador depois de
+evidência do código correto. Nenhuma mudança de código nesta entrada —
+já estava assim desde a decisão anterior.
+
+**2) Nomes não encontrados — de-para manual homologado, local, nunca
+fuzzy automático.** Ordem de resolução, travada em código e teste:
+`match exato normalizado → de-para homologado → NOT_FOUND/AMBIGUOUS`.
+Implementado `src/jrdp/depara.py` (`RegistroDePara`, `carregar_depara`,
+`resolver_depara`) e `src/jrdp/origem_matching.cruzar_com_depara`
+(orquestra as duas etapas, nessa ordem, sempre). O arquivo real de
+de-para (`homologacao/art_latex/questor/depara/depara_nomes.json`) fica
+fora do Git — confirmado com `git add -A -n` que só o `README.md` seria
+versionado. Cada entrada exige `evidencia`, `aprovado_por`, `aprovado_em`
+— nunca "parece o mesmo nome" sem justificativa. Entradas `revogado`
+ficam no histórico sem serem aplicadas.
+
+**Diagnóstico fuzzy — implementado como sugestão, nunca como decisão.**
+`src/jrdp/sugestao_fuzzy.py` (`sugerir_candidatos`, via `difflib`) só
+gera candidatos para um analista revisar; não tem nenhum caminho de
+código que alimente `ResultadoCruzamento.resolvidos` diretamente. Testado
+explicitamente que o resultado não tem métodos `aplicar`/`resolver`.
+
+**3) CSV tipo H e versão do Questor — continuam PENDENTE, sem travar o
+resto.** Nenhuma mudança — `QuestorExporterH` segue bloqueando
+incondicionalmente.
+
+**4) Fail-closed por evento, não pelo pacote inteiro.** Implementado
+`src/jrdp/manifesto.py` (`LinhaManifesto`, `ManifestoPacote`,
+`gerar_manifesto`): cada evento aparece com seu próprio `PASS`/`BLOCKED`
+no manifesto; o pacote é `TOTALMENTE LIBERADO`, `PARCIALMENTE LIBERADO`
+ou `TOTALMENTE BLOQUEADO` dependendo da mistura. Um evento 100% resolvido
+nunca fica refém de outro evento bloqueado — nem o inverso: um evento
+com qualquer pendência nunca gera arquivo parcial (ex.: nunca um
+`1955.csv` com 190 de 233 pessoas).
+
+**Camada de identidade (novo módulo `src/jrdp/identidade.py`):**
+`consolidar_nao_encontrados`/`contar_pessoas_unicas_nao_encontradas`
+agrupam os NOT_FOUND de múltiplos eventos por nome normalizado — a mesma
+pessoa em duas abas conta como uma, não duas.
+
+**Validação real agregada** (só em memória, nenhum nome individual
+persistido): dos 5 eventos já processados (1955, 813, 806, 96, 1524), a
+soma bruta de "não encontrados" por evento é 74, mas consolidando por
+pessoa isso cai para **60 pessoas únicas** — 11 delas aparecem como não
+encontradas em mais de um evento (8 em dois eventos, 3 em três). Rodado
+o diagnóstico fuzzy (só sugestão) sobre essas 60: **39 têm ao menos um
+candidato plausível** no cadastro (provável correção de espaço/acento/
+sobrenome), **21 não têm candidato próximo** (provável ausência real do
+cadastro, precisa investigação separada, não é caso de de-para). O
+manifesto do pacote, sem nenhuma entrada de de-para ainda, é
+`TOTALMENTE BLOQUEADO` (0 de 5 eventos gerados) — esperado, pois nenhuma
+correção foi homologada ainda.
+
+**Evidência:** execução real dos módulos novos contra os arquivos já em
+`homologacao/art_latex/questor/origem/`. Nenhum nome, CPF, código ou
+valor individual foi reproduzido em qualquer arquivo do repositório —
+só contagens agregadas.
+**Impacto:** `src/jrdp/depara.py`, `src/jrdp/sugestao_fuzzy.py`,
+`src/jrdp/identidade.py`, `src/jrdp/manifesto.py` (novos);
+`src/jrdp/origem_matching.py` (`normalizar_nome` tornada pública,
+`cruzar_com_depara` adicionada); `src/jrdp/pipeline.py` (parâmetro
+`depara` opcional, retrocompatível). `homologacao/art_latex/questor/depara/`
+(pasta nova, só README versionado). 34 novos testes
+(`test_depara.py`: 12, `test_cruzar_com_depara.py`: 8,
+`test_sugestao_fuzzy.py`: 4, `test_identidade.py`: 5,
+`test_manifesto.py`: 5), fixture sanitizada
+`tests/fixtures/questor/depara_sanitizado.json`. Nenhum exportador
+ligado à produção; nenhuma correção real de de-para foi criada nesta
+sessão (isso é trabalho do analista de DP, com evidência própria).
+
 ## 2026-09-17 — Extração real das demais abas; H,MM nunca é unidade aritmética; novo PENDENTE (eventos Matriz sem código)
 
 **Contexto:** avançar a extração real das fontes ART LATEX (sem esperar o

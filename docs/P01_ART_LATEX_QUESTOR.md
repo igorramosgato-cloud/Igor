@@ -1,6 +1,6 @@
 # P01 — Variáveis + Benefícios ART LATEX → Questor
 
-## Status: BLOCKED para geração de produção (extração real de 5 abas implementada e validada; tipo H, versão do Questor, Vale-transporte e eventos Matriz sem código: PENDENTES; nenhum exportador ligado à produção)
+## Status: BLOCKED para geração de produção (camada de identidade implementada — de-para homologado + fail-closed por evento; 5 eventos processados, todos BLOCKED até haver de-para real aprovado; tipo H, versão do Questor, Vale-transporte e eventos Matriz sem código: PENDENTES)
 
 Regras de negócio já parametrizadas (`config/clientes/art_latex.json`,
 `.claude/rules/art-latex.md`) e cobertas por testes (`tests/test_art_latex.py`,
@@ -332,6 +332,87 @@ código.
 25 novos testes (`tests/test_minutos.py`: 7, `tests/test_extratores.py`:
 13, `tests/test_conferencia.py`: 5). **147/147 testes no total.**
 
+## Camada de identidade — de-para homologado + fail-closed por evento (2026-09-17)
+
+Quatro decisões de arquitetura fecharam os itens que ficariam esperando
+indefinidamente por evidência externa:
+
+1. **Eventos da Matriz sem código** — continuam `PENDENTE`, sem uso por
+   analogia dos códigos da Filial (sem mudança desde a rodada anterior).
+2. **Nomes não encontrados** — de-para manual homologado, local (nunca
+   Git), com ordem de resolução travada:
+   `match exato normalizado → de-para homologado → NOT_FOUND/AMBIGUOUS`.
+3. **CSV tipo H e versão do Questor** — continuam `PENDENTE`, sem travar
+   o resto do desenvolvimento.
+4. **Fail-closed por evento, não pelo pacote** — um evento 100% resolvido
+   gera seu arquivo mesmo com outros eventos bloqueados; nenhum evento
+   gera arquivo parcial.
+
+### De-para (`src/jrdp/depara.py`) e cruzamento em duas etapas
+
+`RegistroDePara` (nome_origem, unidade, codigo_questor, nome_canonico,
+status, evidencia, aprovado_por, aprovado_em) + `carregar_depara` +
+`resolver_depara`. `origem_matching.cruzar_com_depara` orquestra: match
+exato primeiro, de-para só para quem sobrou, nunca a ordem invertida.
+Entradas `"revogado"` ficam no histórico sem serem aplicadas. Ambiguidade
+no de-para (dois códigos aprovados pro mesmo nome/unidade) nunca é
+resolvida por adivinhação — vira `ambiguo`.
+
+O arquivo real (`homologacao/art_latex/questor/depara/depara_nomes.json`)
+**nunca entra no Git** — confirmado com `git add -A -n`, só o `README.md`
+da pasta seria versionado. Fixture sanitizada em
+`tests/fixtures/questor/depara_sanitizado.json`.
+
+### Diagnóstico fuzzy — sugestão, nunca decisão
+
+`src/jrdp/sugestao_fuzzy.py` (`sugerir_candidatos`, via `difflib`) só
+gera candidatos para revisão humana. Não existe nenhum caminho de código
+que transforme uma sugestão em match aprovado — isso exige uma entrada
+homologada no de-para. Teste explícito prova que o objeto de sugestão não
+tem métodos `aplicar`/`resolver`.
+
+### Camada de identidade (`src/jrdp/identidade.py`)
+
+`consolidar_nao_encontrados`/`contar_pessoas_unicas_nao_encontradas`
+agrupam os NOT_FOUND de múltiplos eventos por nome normalizado — a mesma
+pessoa em duas abas conta como uma pessoa, não duas registros.
+
+### Manifesto do pacote (`src/jrdp/manifesto.py`)
+
+`gerar_manifesto` produz uma linha `PASS`/`BLOCKED` por evento e um
+status de pacote (`TOTALMENTE LIBERADO`/`PARCIALMENTE LIBERADO`/
+`TOTALMENTE BLOQUEADO`), no formato:
+
+```
+EVENTO 1524 — PASS — arquivo gerado
+EVENTO 1955 — BLOCKED — 43 não encontrados
+...
+PACOTE: PARCIALMENTE LIBERADO
+1 evento(s) bloqueado(s) / 1 gerado(s)
+```
+
+### Validação real agregada (nenhum dado individual persistido)
+
+Consolidando os 5 eventos já processados (1955, 813, 806, 96, 1524):
+
+- Soma bruta de "não encontrados" por evento: **74**.
+- Pessoas **únicas** consolidadas: **60** — confirma a hipótese do
+  usuário: 11 pessoas aparecem como não encontradas em mais de um
+  evento (8 em dois eventos, 3 em três).
+- Diagnóstico fuzzy (só sugestão) sobre as 60: **39 têm ao menos um
+  candidato plausível** no cadastro (provável correção de
+  espaço/acento/sobrenome); **21 sem candidato próximo** (provável
+  ausência real do cadastro — não é caso de de-para, precisa
+  investigação separada).
+- Manifesto do pacote, sem nenhum de-para homologado ainda:
+  `TOTALMENTE BLOQUEADO` (0 de 5 eventos gerados) — esperado, pois
+  nenhuma correção foi aprovada nesta sessão (isso é trabalho do
+  analista de DP, com evidência própria, não deste código).
+
+34 novos testes (`test_depara.py`: 12, `test_cruzar_com_depara.py`: 8,
+`test_sugestao_fuzzy.py`: 4, `test_identidade.py`: 5,
+`test_manifesto.py`: 5). **181/181 testes no total.**
+
 ## Pendências para liberar a geração real
 
 1. ~~Layout físico/binário do importador do Questor (tipo V)~~ —
@@ -373,12 +454,18 @@ código.
     Dados reais existem na Matriz, mas nenhum código de evento foi
     confirmado para essas abas nessa unidade; não foi assumido que os
     códigos da Filial se aplicam.
-14. **Decisão operacional de correção** — quem/como corrige nomes não
-    encontrados quando o gate fica BLOCKED (ex.: os 43 da VR Filial, os
-    13 da Cesta Matriz+Filial) — ainda não definido.
-15. **Liberar exportação de produção** — não liberado nesta fase. Falta:
-    itens 5, 7, 12 e 13 acima, testes end-to-end completos, e decisão
-    explícita de homologação (ver
+14. ~~Decisão operacional de correção~~ — **DEFINIDA E IMPLEMENTADA**: de-para
+    manual homologado, local, com evidência/aprovador/data obrigatórios
+    (`src/jrdp/depara.py`). **Ainda falta**: um analista de DP efetivamente
+    revisar as 60 pessoas únicas não encontradas (39 com sugestão
+    diagnóstica, 21 sem) e homologar as correspondências corretas — isso
+    é trabalho humano, não deste código.
+15. ~~Fail-closed por evento vs. pacote~~ — **DEFINIDO E IMPLEMENTADO**
+    (`src/jrdp/manifesto.py`): evento 100% resolvido gera seu arquivo
+    mesmo com outros bloqueados; nenhum evento gera arquivo parcial.
+16. **Liberar exportação de produção** — não liberado nesta fase. Falta:
+    itens 5, 7, 12 e 13 acima, homologação de um de-para real, testes
+    end-to-end completos, e decisão explícita de homologação (ver
     `.claude/skills/homologar-automacao/SKILL.md`).
 
 Ver `.claude/skills/gerar-questor/SKILL.md` para o procedimento completo e

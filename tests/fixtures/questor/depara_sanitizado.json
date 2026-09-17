@@ -1,0 +1,34 @@
+{
+  "entradas": [
+    {
+      "nome_origem": "FULANO DE TAL",
+      "unidade": "filial",
+      "codigo_questor": "101",
+      "nome_canonico": "FULANO DE TAL SANTOS",
+      "status": "aprovado",
+      "evidencia": "Confirmado por CPF no cadastro; nome na planilha de origem estava sem o sobrenome SANTOS",
+      "aprovado_por": "ANALISTA FICTICIO",
+      "aprovado_em": "2026-09-17"
+    },
+    {
+      "nome_origem": "CICLANA DA SILVA",
+      "unidade": "*",
+      "codigo_questor": "202",
+      "nome_canonico": "CICLANA DA SILVA",
+      "status": "aprovado",
+      "evidencia": "Match confirmado por CPF, vale para Matriz e Filial",
+      "aprovado_por": "ANALISTA FICTICIO",
+      "aprovado_em": "2026-09-17"
+    },
+    {
+      "nome_origem": "NOME REVOGADO",
+      "unidade": "filial",
+      "codigo_questor": "303",
+      "nome_canonico": "NOME REVOGADO EXEMPLO",
+      "status": "revogado",
+      "evidencia": "Correspondência incorreta identificada depois; revogada, mantida no histórico",
+      "aprovado_por": "ANALISTA FICTICIO",
+      "aprovado_em": "2026-09-16"
+    }
+  ]
+}

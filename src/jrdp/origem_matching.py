@@ -27,7 +27,12 @@ class MatchingBlockedError(ValueError):
     """Levantado quando há nomes ambíguos ou não encontrados no cadastro."""
 
 
-def _normalizar_nome(nome: str) -> str:
+def normalizar_nome(nome: str) -> str:
+    """Normalização única de nome (espaços colapsados, maiúsculas),
+    reaproveitada por `depara.py` e `identidade.py` — precisa ser a
+    mesma em todo o projeto, senão o de-para e o matching exato podem
+    divergir silenciosamente sobre o que conta como "o mesmo nome".
+    """
     return " ".join(nome.strip().upper().split())
 
 
@@ -53,7 +58,7 @@ def cruzar_por_nome(
     """
     indice: dict[str, list[RegistroCadastro]] = {}
     for registro in cadastro:
-        chave = _normalizar_nome(registro.nome)
+        chave = normalizar_nome(registro.nome)
         indice.setdefault(chave, []).append(registro)
 
     resolvidos: dict[str, str] = {}
@@ -61,7 +66,7 @@ def cruzar_por_nome(
     nao_encontrados: list[str] = []
 
     for nome_original in nomes_origem:
-        chave = _normalizar_nome(nome_original)
+        chave = normalizar_nome(nome_original)
         candidatos = indice.get(chave, [])
         if len(candidatos) == 1:
             resolvidos[nome_original] = candidatos[0].contrato
@@ -69,6 +74,51 @@ def cruzar_por_nome(
             nao_encontrados.append(nome_original)
         else:
             ambiguos[nome_original] = [c.contrato for c in candidatos]
+
+    return ResultadoCruzamento(
+        resolvidos=resolvidos, ambiguos=ambiguos, nao_encontrados=nao_encontrados
+    )
+
+
+def cruzar_com_depara(
+    registros: list[tuple[str, str]],
+    cadastro: list[RegistroCadastro],
+    depara=None,
+) -> ResultadoCruzamento:
+    """Resolve nome→código em duas etapas, na ordem exigida por
+    `.claude/rules/matching.md`, nunca invertida:
+
+        1) match exato normalizado contra o cadastro (mesma lógica de
+           `cruzar_por_nome`);
+        2) para os que sobraram sem resolução, consulta o de-para
+           homologado (`depara.resolver_depara`) — nunca fuzzy
+           automático.
+
+    `registros` é uma lista de `(nome_origem, unidade)`. Nomes que
+    continuam sem resolução, ou ficam ambíguos em qualquer etapa, vão
+    para `nao_encontrados`/`ambiguos` — nunca decididos por aproximação.
+    """
+    from .depara import resolver_depara  # import local: evita ciclo de import
+
+    depara = depara or []
+    nomes = [nome for nome, _unidade in registros]
+    resultado_exato = cruzar_por_nome(nomes, cadastro)
+
+    resolvidos = dict(resultado_exato.resolvidos)
+    ambiguos = dict(resultado_exato.ambiguos)
+    nao_encontrados: list[str] = []
+
+    pendentes = set(resultado_exato.nao_encontrados)
+    for nome, unidade in registros:
+        if nome not in pendentes:
+            continue
+        status, codigos = resolver_depara(nome, unidade, depara)
+        if status == "resolvido":
+            resolvidos[nome] = codigos[0]
+        elif status == "ambiguo":
+            ambiguos[nome] = codigos
+        else:
+            nao_encontrados.append(nome)
 
     return ResultadoCruzamento(
         resolvidos=resolvidos, ambiguos=ambiguos, nao_encontrados=nao_encontrados

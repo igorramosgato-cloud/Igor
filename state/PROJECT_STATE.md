@@ -5,38 +5,39 @@
 ## Onde estamos
 
 Roadmap item 1 (Variáveis + Benefícios → Questor, cliente ART LATEX) em
-andamento. **147/147 testes passando** (excluindo os dois arquivos com
+andamento. **181/181 testes passando** (excluindo os dois arquivos com
 dependências ausentes no ambiente).
 
-Extração real implementada e validada para 5 eventos, sobre a camada
-canônica já construída, **sem liberar produção** e **sem tocar no
-bloqueio do tipo H**:
+Quatro decisões de arquitetura fecharam os itens que ficariam
+esperando indefinidamente por evidência externa:
 
-- `src/jrdp/minutos.py` — proteção permanente: H,MM nunca é somado como
-  decimal (01:52+00:32 = 144 minutos/02:24, nunca "1,84").
-- `src/jrdp/extratores/` — `valor_simples.py` (Vale-refeição,
-  Vale-compras, Convênio Farmácia, Adicional Noturno), `cesta_basica.py`,
-  `horas.py` (Hora-extra, estrutural, sem dados reais para validar),
-  `vale_transporte.py` (propositalmente PENDENTE — zero registros reais).
+1. **Eventos da Matriz sem código** — continuam `PENDENTE` (sem
+   analogia com a Filial).
+2. **De-para manual homologado** (`src/jrdp/depara.py`) — resolve nomes
+   não encontrados sem fuzzy automático. Ordem travada:
+   `match exato normalizado → de-para homologado → NOT_FOUND/AMBIGUOUS`.
+   Arquivo real fica fora do Git (confirmado com `git add -A -n`).
+3. **CSV tipo H e versão do Questor** — continuam `PENDENTE`, sem travar
+   o resto.
+4. **Fail-closed por evento, não pelo pacote** — `src/jrdp/manifesto.py`
+   gera `PASS`/`BLOCKED` por evento; um evento 100% resolvido não fica
+   refém de outro bloqueado, e nenhum evento gera arquivo parcial.
 
-**Validação real agregada** (nenhum dado individual persistido): VR
-Filial 233/190/43, Compras Filial 21/16/5, Farmácia Filial 7/5/2,
-Adicional Noturno Filial 44/33/11, Cesta Matriz+Filial 317/304/13
-(total/encontrados/não encontrados). Todos `BLOCKED` pela política
-fail-closed — esperado, confirma que o gate funciona.
+Também implementados: `sugestao_fuzzy.py` (diagnóstico humano, nunca
+decide matching automaticamente) e `identidade.py` (consolida NOT_FOUND
+de múltiplos eventos por pessoa, não por registro).
 
-**Conflito resolvido a favor da evidência física**: uma instrução pedia
-"Matriz: coluna E Desconto" para a Cesta Básica — isso contradiz achado
-já registrado (coluna real é `CR`, sem coluna de valor). Não foi seguido;
-a regra confirmada (contagem × R$1,00) foi mantida.
-
-**Achado novo (PENDENTE)**: a Matriz tem dados reais de Vale-refeição,
-Vale-compras, Convênio Farmácia e Adicional Noturno, mas nenhum código de
-evento confirmado para essas abas nessa unidade — não foi assumido que os
-códigos da Filial se aplicam.
+**Validação real agregada** (nenhum dado individual persistido): dos 5
+eventos já processados, a soma bruta de não encontrados é 74, mas
+consolidando por pessoa são **60 únicas** (11 aparecem em mais de um
+evento — confirma a hipótese de que a mesma pessoa se repete entre
+abas). Diagnóstico fuzzy: 39 das 60 têm candidato plausível, 21 não.
+Manifesto do pacote, sem de-para homologado ainda: `TOTALMENTE
+BLOQUEADO` (0/5 eventos gerados) — esperado, falta o trabalho humano de
+aprovar as correções.
 
 Continuam PENDENTES: certificação binária tipo H, versão do Questor,
-Vale-transporte (zero dados reais + coluna de valor não confirmada).
+Vale-transporte, códigos de evento da Matriz para 4 abas.
 
 Detalhes completos em `docs/P01_ART_LATEX_QUESTOR.md` e
 `docs/DECISIONS.md` (entradas de 2026-09-17). Nenhum dado pessoal foi
@@ -45,12 +46,16 @@ produção — `BLOCKED` global do P01 continua valendo.
 
 ## Próximo passo
 
-Três decisões dependem do usuário:
-1. Códigos de evento da Matriz para Vale-refeição/Vale-compras/Convênio
-   Farmácia/Adicional Noturno (mesmos da Filial? diferentes? não existem?).
-2. Fluxo operacional para corrigir nomes não encontrados (ex.: os 43 da
-   VR Filial) — quem corrige, onde, e como re-rodar depois.
-3. Arquivo `.csv` real tipo H e/ou versão do Questor, quando disponíveis.
+Trabalho humano, não de código: um analista de DP revisa as 60 pessoas
+únicas não encontradas (usando os candidatos de diagnóstico fuzzy como
+ponto de partida, nunca como aprovação automática) e cria entradas
+homologadas em `homologacao/art_latex/questor/depara/depara_nomes.json`
+(local, com evidência/aprovador/data). Depois disso, reexecutar a
+validação — os eventos que ficarem 100% resolvidos podem ser gerados
+pelo `QuestorExporterV`, mesmo que outros continuem bloqueados.
+
+Em paralelo: confirmar códigos de evento da Matriz (4 abas), obter CSV
+tipo H real, e a versão do Questor, quando disponíveis.
 
 ## Como retomar
 
