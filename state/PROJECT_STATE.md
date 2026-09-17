@@ -5,36 +5,27 @@
 ## Onde estamos
 
 Roadmap item 1 (Variáveis + Benefícios → Questor, cliente ART LATEX) em
-andamento. **181/181 testes passando** (excluindo os dois arquivos com
+andamento. **200/200 testes passando** (excluindo os dois arquivos com
 dependências ausentes no ambiente).
 
-Quatro decisões de arquitetura fecharam os itens que ficariam
-esperando indefinidamente por evidência externa:
+**Correção de escopo do de-para**: agora é por **cliente+unidade+nome**,
+nunca só nome+unidade — evita reaproveitar uma correspondência da Filial
+para a Matriz, ou de um cliente para outro, por acidente.
 
-1. **Eventos da Matriz sem código** — continuam `PENDENTE` (sem
-   analogia com a Filial).
-2. **De-para manual homologado** (`src/jrdp/depara.py`) — resolve nomes
-   não encontrados sem fuzzy automático. Ordem travada:
-   `match exato normalizado → de-para homologado → NOT_FOUND/AMBIGUOUS`.
-   Arquivo real fica fora do Git (confirmado com `git add -A -n`).
-3. **CSV tipo H e versão do Questor** — continuam `PENDENTE`, sem travar
-   o resto.
-4. **Fail-closed por evento, não pelo pacote** — `src/jrdp/manifesto.py`
-   gera `PASS`/`BLOCKED` por evento; um evento 100% resolvido não fica
-   refém de outro bloqueado, e nenhum evento gera arquivo parcial.
+**Planilha de revisão de identidade gerada** (não preenchida):
+`homologacao/art_latex/questor/depara/revisao_depara_nomes.xlsx` (fora
+do Git), com as 60 pessoas reais não encontradas — 54 com sugestão
+automática (fuzzy, corte 0,6), 6 sem candidato (busca manual). Colunas:
+Nome origem, Unidade, Eventos, Sugestão, Código sugerido, Nome cadastro,
+Confiança diagnóstica, Decisão analista, Aprovado por, Data aprovação,
+Observação. **Nenhuma decisão foi preenchida** — isso é trabalho do
+analista de DP.
 
-Também implementados: `sugestao_fuzzy.py` (diagnóstico humano, nunca
-decide matching automaticamente) e `identidade.py` (consolida NOT_FOUND
-de múltiplos eventos por pessoa, não por registro).
-
-**Validação real agregada** (nenhum dado individual persistido): dos 5
-eventos já processados, a soma bruta de não encontrados é 74, mas
-consolidando por pessoa são **60 únicas** (11 aparecem em mais de um
-evento — confirma a hipótese de que a mesma pessoa se repete entre
-abas). Diagnóstico fuzzy: 39 das 60 têm candidato plausível, 21 não.
-Manifesto do pacote, sem de-para homologado ainda: `TOTALMENTE
-BLOQUEADO` (0/5 eventos gerados) — esperado, falta o trabalho humano de
-aprovar as correções.
+Novo módulo `src/jrdp/revisao_depara.py`: gera a planilha
+(`escrever_planilha_revisao`) e importa só as linhas marcadas
+`"APROVAR"` com aprovador/data preenchidos
+(`importar_decisoes_aprovadas`) — qualquer coisa incompleta é erro, não
+suposição.
 
 Continuam PENDENTES: certificação binária tipo H, versão do Questor,
 Vale-transporte, códigos de evento da Matriz para 4 abas.
@@ -46,16 +37,17 @@ produção — `BLOCKED` global do P01 continua valendo.
 
 ## Próximo passo
 
-Trabalho humano, não de código: um analista de DP revisa as 60 pessoas
-únicas não encontradas (usando os candidatos de diagnóstico fuzzy como
-ponto de partida, nunca como aprovação automática) e cria entradas
-homologadas em `homologacao/art_latex/questor/depara/depara_nomes.json`
-(local, com evidência/aprovador/data). Depois disso, reexecutar a
-validação — os eventos que ficarem 100% resolvidos podem ser gerados
-pelo `QuestorExporterV`, mesmo que outros continuem bloqueados.
+Trabalho humano: um analista de DP abre
+`homologacao/art_latex/questor/depara/revisao_depara_nomes.xlsx`
+localmente, confirma ou rejeita cada uma das 60 sugestões (ou busca
+manualmente as 6 sem candidato), preenche `Decisão analista`
+(`APROVAR`/`REJEITAR`), `Aprovado por` e `Data aprovação`, e salva.
 
-Em paralelo: confirmar códigos de evento da Matriz (4 abas), obter CSV
-tipo H real, e a versão do Questor, quando disponíveis.
+Depois disso, rodar `revisao_depara.importar_decisoes_aprovadas` sobre a
+planilha revisada, mesclar com `depara.mesclar_depara`, salvar com
+`depara.salvar_depara`, e reexecutar os 5 eventos — os que ficarem 100%
+resolvidos passam a `PASS` no manifesto e podem ser gerados pelo
+`QuestorExporterV`, independentemente dos demais.
 
 ## Como retomar
 

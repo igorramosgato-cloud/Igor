@@ -36,3 +36,29 @@ def contar_pessoas_unicas_nao_encontradas(
     lancamentos_por_evento: dict[int, list[LancamentoCanonico]],
 ) -> int:
     return len(consolidar_nao_encontrados(lancamentos_por_evento))
+
+
+def coletar_ocorrencias_nao_encontradas(
+    lancamentos_por_evento: dict[int, list[LancamentoCanonico]],
+) -> list[dict]:
+    """Uma entrada por combinação (nome normalizado, unidade) não
+    encontrada — a granularidade que a revisão humana e o de-para
+    precisam (de-para é por cliente+unidade+nome, ver `depara.py`).
+
+    Cada item: `{"nome_origem": <grafia original>, "unidade": str,
+    "eventos": [códigos de evento]}`. Se a mesma pessoa/unidade aparecer
+    em vários eventos, os eventos são agregados numa única entrada.
+    """
+    agregados: dict[tuple[str, str], dict] = {}
+    for codigo_evento in sorted(lancamentos_por_evento):
+        for lancamento in lancamentos_por_evento[codigo_evento]:
+            if lancamento.status_matching != "nao_encontrado":
+                continue
+            chave = (normalizar_nome(lancamento.nome_origem), lancamento.unidade_origem)
+            item = agregados.setdefault(
+                chave,
+                {"nome_origem": lancamento.nome_origem, "unidade": lancamento.unidade_origem, "eventos": []},
+            )
+            if codigo_evento not in item["eventos"]:
+                item["eventos"].append(codigo_evento)
+    return [agregados[chave] for chave in sorted(agregados)]

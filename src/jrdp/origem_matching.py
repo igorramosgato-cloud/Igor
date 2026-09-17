@@ -83,6 +83,7 @@ def cruzar_por_nome(
 def cruzar_com_depara(
     registros: list[tuple[str, str]],
     cadastro: list[RegistroCadastro],
+    cliente: str,
     depara=None,
 ) -> ResultadoCruzamento:
     """Resolve nome→código em duas etapas, na ordem exigida por
@@ -92,7 +93,9 @@ def cruzar_com_depara(
            `cruzar_por_nome`);
         2) para os que sobraram sem resolução, consulta o de-para
            homologado (`depara.resolver_depara`) — nunca fuzzy
-           automático.
+           automático. O de-para é sempre por cliente+unidade+nome (ver
+           `docs/DECISIONS.md`, 2026-09-17) — nunca reaproveitado entre
+           clientes ou unidades por acidente.
 
     `registros` é uma lista de `(nome_origem, unidade)`. Nomes que
     continuam sem resolução, ou ficam ambíguos em qualquer etapa, vão
@@ -112,7 +115,7 @@ def cruzar_com_depara(
     for nome, unidade in registros:
         if nome not in pendentes:
             continue
-        status, codigos = resolver_depara(nome, unidade, depara)
+        status, codigos = resolver_depara(nome, unidade, cliente, depara)
         if status == "resolvido":
             resolvidos[nome] = codigos[0]
         elif status == "ambiguo":

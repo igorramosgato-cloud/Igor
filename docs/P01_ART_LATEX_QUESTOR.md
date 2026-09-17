@@ -1,6 +1,6 @@
 # P01 — Variáveis + Benefícios ART LATEX → Questor
 
-## Status: BLOCKED para geração de produção (camada de identidade implementada — de-para homologado + fail-closed por evento; 5 eventos processados, todos BLOCKED até haver de-para real aprovado; tipo H, versão do Questor, Vale-transporte e eventos Matriz sem código: PENDENTES)
+## Status: BLOCKED para geração de produção (planilha de revisão de identidade gerada com os 60 casos reais — aguardando revisão humana; de-para agora é por cliente+unidade+nome; tipo H, versão do Questor, Vale-transporte e eventos Matriz sem código: PENDENTES)
 
 Regras de negócio já parametrizadas (`config/clientes/art_latex.json`,
 `.claude/rules/art-latex.md`) e cobertas por testes (`tests/test_art_latex.py`,
@@ -413,6 +413,46 @@ Consolidando os 5 eventos já processados (1955, 813, 806, 96, 1524):
 `test_sugestao_fuzzy.py`: 4, `test_identidade.py`: 5,
 `test_manifesto.py`: 5). **181/181 testes no total.**
 
+## De-para por cliente+unidade; planilha de revisão gerada (2026-09-17)
+
+Duas correções operacionais antes de a revisão humana começar de verdade:
+
+### De-para agora é por cliente+unidade+nome, nunca só nome+unidade
+
+`RegistroDePara` ganhou o campo `cliente` (obrigatório, nunca `"*"`).
+`resolver_depara`/`cruzar_com_depara` só resolvem quando o cliente bate
+exatamente — uma correspondência aprovada para a Filial da ART LATEX
+nunca vale para a Matriz por acidente (a menos que a entrada use
+`unidade="*"` explicitamente), e muito menos para outro cliente.
+
+### Planilha de revisão de identidade (`src/jrdp/revisao_depara.py`)
+
+`coletar_ocorrencias_nao_encontradas` (uma entrada por
+nome+unidade, com todos os eventos agregados) →
+`montar_linhas_revisao` (junta sugestão fuzzy, quando existir) →
+`escrever_planilha_revisao` (`.xlsx` local) →
+`importar_decisoes_aprovadas` (só linhas `"APROVAR"` com aprovador e
+data preenchidos).
+
+Colunas: `Nome origem`, `Unidade`, `Eventos`, `Sugestão`, `Código
+sugerido`, `Nome cadastro`, `Confiança diagnóstica`, `Decisão analista`,
+`Aprovado por`, `Data aprovação`, `Observação` — três a mais que a
+proposta original (`Eventos`, `Aprovado por`, `Data aprovação`), porque
+o schema do de-para exige essa evidência para qualquer entrada aprovada.
+
+**Gerada com os 60 casos reais** em
+`homologacao/art_latex/questor/depara/revisao_depara_nomes.xlsx` (fora
+do Git, confirmado com `git check-ignore -v`): **54 linhas com sugestão
+automática, 6 sem candidato** (corte de similaridade padrão 0,6 — um
+corte mais rígido de 0,75, usado num diagnóstico anterior, havia
+mostrado 39/21; são recortes de confiança diferentes, não uma
+contradição). **Nenhuma decisão foi preenchida** — isso é julgamento do
+analista de DP, não deste código.
+
+17 novos testes (`test_revisao_depara.py`: 10, mais casos de cliente em
+`test_depara.py`/`test_cruzar_com_depara.py` e de coleta por unidade em
+`test_identidade.py`). **200/200 testes no total.**
+
 ## Pendências para liberar a geração real
 
 1. ~~Layout físico/binário do importador do Questor (tipo V)~~ —
@@ -455,11 +495,13 @@ Consolidando os 5 eventos já processados (1955, 813, 806, 96, 1524):
     confirmado para essas abas nessa unidade; não foi assumido que os
     códigos da Filial se aplicam.
 14. ~~Decisão operacional de correção~~ — **DEFINIDA E IMPLEMENTADA**: de-para
-    manual homologado, local, com evidência/aprovador/data obrigatórios
-    (`src/jrdp/depara.py`). **Ainda falta**: um analista de DP efetivamente
-    revisar as 60 pessoas únicas não encontradas (39 com sugestão
-    diagnóstica, 21 sem) e homologar as correspondências corretas — isso
-    é trabalho humano, não deste código.
+    manual homologado, local, por cliente+unidade+nome, com evidência/
+    aprovador/data obrigatórios (`src/jrdp/depara.py`). **Planilha de
+    revisão gerada** com os 60 casos reais
+    (`homologacao/art_latex/questor/depara/revisao_depara_nomes.xlsx`,
+    54 com sugestão, 6 sem). **Ainda falta**: um analista de DP
+    efetivamente revisar e marcar "APROVAR"/"REJEITAR" — isso é trabalho
+    humano, não deste código.
 15. ~~Fail-closed por evento vs. pacote~~ — **DEFINIDO E IMPLEMENTADO**
     (`src/jrdp/manifesto.py`): evento 100% resolvido gera seu arquivo
     mesmo com outros bloqueados; nenhum evento gera arquivo parcial.

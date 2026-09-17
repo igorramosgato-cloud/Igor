@@ -42,7 +42,7 @@ def construir_lancamentos_evento(
     diagnóstico humano).
     """
     resultado_matching = cruzar_com_depara(
-        [(r.nome, r.unidade) for r in registros], cadastro, depara
+        [(r.nome, r.unidade) for r in registros], cadastro, cliente, depara
     )
 
     lancamentos = []

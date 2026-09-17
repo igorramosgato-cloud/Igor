@@ -3,6 +3,60 @@
 Entradas mais recentes no topo. Formato definido em
 `.claude/skills/registrar-decisao/SKILL.md`.
 
+## 2026-09-17 — De-para por cliente+unidade+nome; planilha de revisão humana gerada
+
+**Contexto:** operacionalizar a revisão das 60 pessoas não encontradas
+para o analista de DP, e corrigir o escopo do de-para antes que ele fosse
+usado de verdade.
+
+**1) De-para agora é por cliente+unidade+nome, nunca só nome+unidade.**
+`RegistroDePara` ganhou o campo `cliente` (obrigatório, nunca `"*"` —
+diferente de `unidade`, que aceita `"*"` para valer nas duas unidades do
+mesmo cliente). `depara.resolver_depara` e
+`origem_matching.cruzar_com_depara` agora exigem `cliente` e só
+resolvem quando bate exatamente. Isso evita reaproveitar uma
+correspondência da Filial de um cliente para a Matriz, ou pior, para um
+cliente diferente, só porque o nome de origem é textualmente igual.
+Testado explicitamente (`test_cliente_errado_nunca_reaproveita_correspondencia`,
+`test_depara_com_cliente_errado_nao_resolve`).
+
+**2) Planilha de revisão de identidade — gerada, não preenchida por
+mim.** Novo módulo `src/jrdp/revisao_depara.py`:
+`montar_linhas_revisao` (junta cada ocorrência não encontrada com uma
+sugestão fuzzy, quando existir) + `escrever_planilha_revisao` (`.xlsx`
+local) + `importar_decisoes_aprovadas` (só linhas `"APROVAR"` com
+aprovador e data preenchidos viram `RegistroDePara`; qualquer coisa
+incompleta é erro, não suposição). Colunas: Nome origem, Unidade,
+Eventos, Sugestão, Código sugerido, Nome cadastro, Confiança
+diagnóstica, Decisão analista, Aprovado por, Data aprovação, Observação
+— três colunas a mais que a proposta original (Aprovado por, Data
+aprovação, Eventos) porque o schema do de-para exige essa evidência.
+**Gerei a planilha real com os 60 casos reais, mas não preenchi nenhuma
+decisão** — isso é julgamento humano, não meu.
+**3) CSV tipo H e versão do Questor — sem mudança, seguem PENDENTE.**
+
+**Validação real** (nenhum nome persistido em arquivo versionado): a
+planilha real gerada em
+`homologacao/art_latex/questor/depara/revisao_depara_nomes.xlsx` (fora
+do Git, confirmado com `git check-ignore -v`) tem 60 linhas — **54 com
+sugestão automática, 6 sem candidato** (para busca manual). Esse número
+usa o corte padrão de similaridade do módulo (0,6); um diagnóstico
+anterior, com corte mais rígido (0,75), havia mostrado 39/21 — são dois
+recortes de confiança diferentes, não uma contradição.
+
+**Evidência:** execução real dos módulos novos contra os arquivos já em
+`homologacao/art_latex/questor/origem/`.
+**Impacto:** `src/jrdp/depara.py` (campo `cliente`, `salvar_depara`,
+`mesclar_depara`), `src/jrdp/origem_matching.py` (`cruzar_com_depara`
+exige `cliente`), `src/jrdp/pipeline.py` (propaga `cliente`),
+`src/jrdp/identidade.py` (`coletar_ocorrencias_nao_encontradas`),
+`src/jrdp/revisao_depara.py` (novo). `tests/fixtures/questor/depara_sanitizado.json`
+atualizada com `cliente`. 17 novos testes
+(`test_revisao_depara.py`: 10, mais 7 entre `test_depara.py`/
+`test_cruzar_com_depara.py`/`test_identidade.py` cobrindo cliente e
+coleta por unidade). Nenhum de-para real foi homologado nesta sessão —
+o pacote continua `TOTALMENTE BLOQUEADO` até a revisão humana acontecer.
+
 ## 2026-09-17 — Camada de identidade: de-para homologado, fail-closed por evento, quatro decisões fechadas
 
 **Contexto:** com 5 eventos processados e todos `BLOCKED` por nomes não
