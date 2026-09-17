@@ -10,6 +10,7 @@ from jrdp.serializers import InvalidTimeFormatError, serialize_hmm, serialize_va
         ("01:52", "1,52"),
         ("04:07", "4,07"),
         ("06:00", "6,00"),
+        ("07:31", "7,31"),  # exemplo dado pelo usuário para HE 50%, 2026-09-17
     ],
 )
 def test_serialize_hmm_casos_confirmados(entrada, esperado):

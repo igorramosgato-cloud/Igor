@@ -3,6 +3,54 @@
 Entradas mais recentes no topo. Formato definido em
 `.claude/skills/registrar-decisao/SKILL.md`.
 
+## 2026-09-17 — Cinco pendências do P01 resolvidas pelo usuário
+
+**Contexto:** cinco pontos em aberto listados ao usuário após a
+certificação de layout e a inventariação das planilhas de origem.
+**Decisões:**
+
+1. **Cesta Básica da Matriz — código confirmado.** O usuário confirmou:
+   "o evento é desconto e o número do evento é 1524" — mesmo código do
+   evento equivalente na Filial. `config/clientes/art_latex.json` e
+   `.claude/rules/art-latex.md` atualizados; a regra de R$1,00/colaborador
+   foi herdada por analogia com a Filial (não reconfirmada
+   explicitamente para a Matriz — fica registrado como tal).
+2. **Identidade do arquivo "Filial" — esclarecida, não é erro.** O
+   usuário confirmou: "é só a planilha, a intenção é juntar os dois em um
+   único arquivo pra importar no Questor". Isso implica que o pipeline de
+   geração deve produzir **um único arquivo por evento**, combinando
+   registros de Matriz e Filial, não dois arquivos separados.
+3. **Eventos tipo H seguem a mesma regra H,MM.** Confirmado com exemplo:
+   "07:31 de 50%, na conversão tem que ser 7,31". `serialize_hmm("07:31")`
+   já produz `"7,31"` sem qualquer alteração de código — validado e
+   travado por novo caso em
+   `tests/test_serializers.py::test_serialize_hmm_casos_confirmados`.
+   Certificação física binária de um arquivo `.csv` real com `tipo=H`
+   continua não realizada (esta é uma confirmação de regra de negócio,
+   não evidência binária).
+4. **Cruzamento origem × cadastro implementado.** Novo módulo
+   `src/jrdp/origem_matching.py`: cruza nomes das planilhas Matriz/Filial
+   contra o cadastro de ativos (`cadastro_ativos.py`) por nome exato
+   (normalizado por espaço/caixa). Nomes ambíguos (duplicados no
+   cadastro) ou não encontrados **nunca são resolvidos automaticamente**
+   — ficam explícitos em `ambiguos`/`nao_encontrados`, com
+   `assert_sem_bloqueios` levantando `MatchingBlockedError` listando cada
+   caso individualmente (nunca um resumo agregado), conforme
+   `.claude/rules/matching.md`. Testado com 9 casos usando dados
+   fictícios (`tests/test_origem_matching.py`).
+**Evidência:** confirmações explícitas do usuário nesta sessão (2026-09-17).
+Módulo de cruzamento validado também em memória contra dados reais (aba
+"Cesta basica" da Matriz × cadastro real): 117 nomes, 114 resolvidos, 0
+ambíguos, 3 não encontrados — números agregados apenas, nenhum nome
+reproduzido em qualquer arquivo do repositório.
+**Impacto:** `config/clientes/art_latex.json`, `.claude/rules/art-latex.md`,
+`tests/test_config.py`, `tests/test_art_latex.py`,
+`tests/test_serializers.py`, novo `src/jrdp/origem_matching.py` e
+`tests/test_origem_matching.py`. O gerador ART LATEX → Questor completo
+(que usaria esse cruzamento para montar o arquivo final) ainda não foi
+implementado — falta decidir o que fazer com os 3 nomes não encontrados
+antes de qualquer geração de produção real.
+
 ## 2026-09-17 — Chave de matching resolvida: "Contrato" == "COD. FUNC. QUESTOR"
 
 **Contexto:** a entrada anterior (mesma data, logo abaixo) registrava a

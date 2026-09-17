@@ -25,12 +25,34 @@ Este arquivo é a documentação legível da mesma configuração.
 | Código | Descrição              | Tipo  |
 |-------:|------------------------|-------|
 | 50     | HE 100% Noturna        | Hora  |
-| PENDENTE | Cesta Básica (coluna E "Desconto") | Valor |
+| 1524   | Cesta Básica (desconto) | Valor |
 
-O código do evento da Cesta da Matriz está **propositalmente pendente**: não
-há evidência suficiente no material consolidado para defini-lo. Não inventar
-esse código sob nenhuma circunstância — a automação deve ficar `BLOCKED`
-nesse ponto até a evidência chegar.
+O código 1524 da Cesta Básica da Matriz foi confirmado pelo usuário em
+2026-09-17 — é o mesmo código do evento equivalente na Filial, e sua
+natureza é de **desconto**. A aba real `Cesta basica` da Matriz não tem
+coluna de valor explícita (colunas: `COD. FUNC.`, `NOME DO EMPREGADO`,
+`DEPARTAMENTO`, `CENTRO DE CUSTO`, `CR`, `Assinatura`) — o valor é
+derivado por **contagem de colaboradores listados** (R$ 1,00 cada, mesma
+regra da Filial), não lido de uma coluna. Essa regra de R$1,00/colaborador
+foi herdada por analogia com a Filial, não reconfirmada explicitamente
+para a Matriz — ver `docs/DECISIONS.md` (2026-09-17).
+
+Um registro anterior aqui associava esse evento à "coluna E Desconto" —
+isso estava **errado** (a coluna E real da aba é `CR`, não `Desconto`) e
+foi corrigido a partir de evidência física real (planilha `.xlsm`). O
+código do evento em si (1524) foi confirmado separadamente pelo usuário,
+não pela planilha.
+
+## Arquivo de importação combinado (Matriz + Filial)
+
+As planilhas "Matriz" e "Filial" usam o mesmo template (por isso o
+cabeçalho interno do arquivo "Filial" ainda diz "MATRIZ" — não é erro, é
+resquício do template). A intenção confirmada pelo usuário é **unir os
+dados de Matriz e Filial em um único arquivo de importação por evento**
+para o Questor, não gerar dois arquivos separados. O pipeline de geração
+deve montar um único `.csv` (no layout certificado em
+`src/jrdp/questor_layout.py`) contendo os registros de ambas as unidades
+para cada evento.
 
 ## Erro histórico
 
@@ -54,3 +76,12 @@ Essa regra é travada por teste explícito em
 `tests/test_serializers.py::test_hmm_never_converts_to_decimal_hours`.
 Qualquer alteração em `src/jrdp/serializers.py` que quebre esse teste deve
 ser revertida, não o teste ajustado.
+
+O usuário confirmou em 2026-09-17 que essa mesma regra H,MM vale para
+eventos do tipo Hora no layout genérico do Questor (`tipo` = `H` em
+`src/jrdp/questor_layout.py`) — exemplo dado: `07:31` de HE 50% deve virar
+`7,31`. `serialize_hmm("07:31")` já produz exatamente esse resultado, sem
+necessidade de alteração de código. A certificação física de um arquivo
+`.csv` real com `tipo=H` (byte a byte, como foi feito para `tipo=V`) ainda
+não foi feita — esta confirmação é uma regra de negócio do cliente, não
+uma evidência binária direta.

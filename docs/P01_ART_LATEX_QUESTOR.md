@@ -1,6 +1,6 @@
 # P01 — Variáveis + Benefícios ART LATEX → Questor
 
-## Status: BLOCKED para geração de produção (gate de layout: PASS; matching: RESOLVIDO)
+## Status: BLOCKED para geração de produção (layout, matching, Cesta Matriz, tipo H e identidade Filial: RESOLVIDOS; falta implementar o pipeline)
 
 Regras de negócio já parametrizadas (`config/clientes/art_latex.json`,
 `.claude/rules/art-latex.md`) e cobertas por testes (`tests/test_art_latex.py`,
@@ -72,13 +72,22 @@ corretamente, sem persistir nenhum dado).
 - `src/jrdp/questor_layout.py` já reflete a evidência: nunca reformata o
   valor, devolve a string bruta como está no arquivo.
 
+### Eventos tipo H (Hora) — regra de serialização confirmada pelo cliente (2026-09-17)
+
+O usuário confirmou que o mesmo formato H,MM já implementado vale para
+eventos tipo `H`: exemplo dado, `07:31` de HE 50% deve virar `7,31`.
+`serialize_hmm("07:31")` já produz exatamente isso, sem alteração de
+código — travado em
+`tests/test_serializers.py::test_serialize_hmm_casos_confirmados`. A
+certificação **binária** de um arquivo `.csv` real com `tipo=H` (como foi
+feita para `tipo=V`) continua não realizada — isso é confirmação de regra
+de negócio, não evidência física direta do contrato de arquivo.
+
 ### CONDICIONAL / PENDENTE
 
-- Se o layout de eventos do tipo `H` (Hora) segue exatamente o mesmo
-  contrato de encoding/delimitador — não observado diretamente ainda
-  (só vimos um arquivo tipo `V`).
-- Código do evento da Cesta Básica da Matriz (ver `.claude/rules/art-latex.md`)
-  — continua PENDENTE, sem relação com este gate de layout.
+- Certificação binária de um arquivo `.csv` real com `tipo=H` (a regra de
+  valor já está confirmada pelo cliente, ver acima; falta só o arquivo
+  físico para o mesmo nível de certificação que o tipo `V` recebeu).
 - Versão específica do Questor/layout do conversor — não confirmada.
 
 ## Planilhas de origem ART LATEX — achados (2026-09-17)
@@ -140,56 +149,71 @@ originais ficam só localmente em
   sanitizada, e validado em memória contra o arquivo real (495/495
   registros). Isso dá as funções `indexar_por_contrato` e
   `indexar_por_cpf` para resolver nome/CPF → código de forma confiável.
-- **Ainda não implementado**: o cruzamento efetivo desse índice contra os
-  registros das planilhas Matriz/Filial (que só têm nome) dentro de um
-  pipeline origem → Questor. Isso é o próximo passo depois que as demais
-  pendências abaixo forem resolvidas.
+- **Implementado (2026-09-17)**: `src/jrdp/origem_matching.py` faz o
+  cruzamento nome→código entre as planilhas de origem e o cadastro,
+  usando nome exato (normalizado por espaço/caixa). Nomes ambíguos
+  (duplicados no cadastro) ou não encontrados **nunca são resolvidos
+  automaticamente** — ficam explícitos em `ambiguos`/`nao_encontrados`, e
+  `assert_sem_bloqueios` levanta `MatchingBlockedError` listando cada caso
+  individualmente. Testado com dados fictícios em
+  `tests/test_origem_matching.py`. Validado em memória contra dados reais
+  (aba `Cesta basica` da Matriz × cadastro real): **117 nomes, 114
+  resolvidos, 0 ambíguos, 3 não encontrados** (números agregados apenas —
+  nenhum nome reproduzido em qualquer arquivo do repositório).
+- **Ainda não implementado**: o que fazer com os nomes não encontrados
+  antes de gerar produção (ex.: reportar para o DP corrigir manualmente no
+  cadastro ou na planilha de origem), e a montagem do arquivo final
+  combinando Matriz+Filial (ver próxima seção) usando esse cruzamento.
 
-### CONFLITO REGISTRADO — coluna da Cesta Básica da Matriz
+### Cesta Básica da Matriz — código confirmado pelo usuário (2026-09-17)
 
 - Decisão anterior (`docs/DECISIONS.md`, 2026-09-16) registrava a Cesta
-  Básica da Matriz como vinculada à "coluna E `Desconto`".
-- Evidência física agora mostra que a aba `Cesta basica` da Matriz tem,
-  na coluna E, o cabeçalho `CR` (Centro de... algo, não confirmado o que
-  significa), **não** `Desconto`. Não há coluna `Desconto` nesta aba.
-- **Evidência física prevalece** sobre o registro anterior (que era uma
-  consolidação de memória, não um arquivo). O código do evento da Cesta
-  Básica da Matriz continua **PENDENTE** — a correção aqui é só sobre
-  qual coluna, não resolve o código do evento.
+  Básica da Matriz como vinculada à "coluna E `Desconto`" — **evidência
+  física mostrou que isso estava errado** (a coluna E real é `CR`, não
+  `Desconto`; não há coluna `Desconto` nesta aba).
+- O usuário então confirmou diretamente: **"o evento é desconto e o
+  número do evento é 1524"** — mesmo código do evento equivalente na
+  Filial. `config/clientes/art_latex.json` e `.claude/rules/art-latex.md`
+  atualizados; não é mais PENDENTE.
+- Como a aba `Cesta basica` da Matriz não tem coluna de valor explícita
+  (só `COD. FUNC.`, `NOME DO EMPREGADO`, `DEPARTAMENTO`, `CENTRO DE
+  CUSTO`, `CR`, `Assinatura`), o valor é derivado por **contagem de
+  colaboradores listados** (R$ 1,00 cada — regra herdada por analogia com
+  a Filial, não reconfirmada explicitamente para a Matriz).
 
-### CONFLITO REGISTRADO — identidade do arquivo Filial
+### Identidade do arquivo Filial — esclarecida (2026-09-17)
 
-- O arquivo recebido como "planilha de importação **Filial**" tem, na
-  aba `Configuracoes` e em outras, o mesmo texto de cabeçalho `"ART LATEX
-  IND E COM DE ARTEF DE LATEX- MATRIZ"` usado no arquivo da Matriz.
-- Não vou assumir que isso é um erro de template inofensivo nem que os
-  dados estão trocados — fica registrado como divergência a confirmar
-  com o usuário.
-
-### CONDICIONAL / PENDENTE (herdado da certificação do layout)
-
-- Formato de hora/valor para `Hora-extra` e `Plano de saude` — sem
-  evidência (0 registros reais nas duas abas, nos dois arquivos).
-- Se o layout de eventos do tipo `H` (Hora) segue o mesmo contrato de
-  encoding/delimitador do Questor — ainda não observado.
-- Código do evento da Cesta Básica da Matriz — continua PENDENTE.
-- Versão específica do Questor/layout do conversor — não confirmada.
+- O usuário confirmou: **"é só a planilha, a intenção é juntar os dois em
+  um único arquivo pra importar no Questor"**. O cabeçalho interno
+  dizendo "MATRIZ" no arquivo Filial é só resquício de template, não um
+  erro nem dados trocados.
+- **Implicação de arquitetura**: o pipeline de geração deve produzir **um
+  único arquivo por evento**, combinando registros de Matriz e Filial —
+  não dois arquivos separados. Isso ainda não foi implementado.
 
 ## Pendências para liberar a geração real
 
-1. ~~Layout físico/binário do importador do Questor~~ — **CONFIRMADO**
-   (gate PASS). Resta confirmar o comportamento para eventos tipo `H`.
+1. ~~Layout físico/binário do importador do Questor (tipo V)~~ —
+   **CONFIRMADO** (gate PASS).
 2. ~~Planilhas-fonte reais Matriz/Filial da ART LATEX~~ — **recebidas e
    inventariadas**.
-3. ~~Chave de matching confiável~~ — **RESOLVIDA**: `Contrato` do cadastro
-   real == `COD. FUNC. QUESTOR`, confirmado pelo usuário. Falta apenas
-   implementar o cruzamento dentro do pipeline origem→Questor.
-4. Código do evento da Cesta Básica da Matriz.
-5. Versão específica do Questor/layout do conversor.
-6. Decisão explícita sobre a precisão decimal do valor ao implementar o
-   gerador (ver seção de layout, "Conflito registrado").
-7. Esclarecer a divergência de identidade do arquivo Filial (cabeçalho
-   diz "MATRIZ").
+3. ~~Chave de matching confiável~~ — **RESOLVIDA E IMPLEMENTADA**
+   (`cadastro_ativos.py` + `origem_matching.py`).
+4. ~~Código do evento da Cesta Básica da Matriz~~ — **CONFIRMADO** (1524).
+5. ~~Regra de serialização para eventos tipo H~~ — **CONFIRMADA PELO
+   CLIENTE** (mesma regra H,MM já implementada). Falta só a certificação
+   binária de um arquivo `.csv` real com `tipo=H`.
+6. ~~Identidade do arquivo Filial~~ — **ESCLARECIDA** (é intencional; o
+   objetivo é um único arquivo combinado Matriz+Filial por evento).
+7. Versão específica do Questor/layout do conversor — ainda não
+   confirmada.
+8. **Implementar o pipeline de geração propriamente dito**: extrair os
+   valores reais de cada aba de benefício (Matriz/Filial), resolver
+   código via `origem_matching`, decidir o que fazer com nomes não
+   encontrados, combinar Matriz+Filial em um único arquivo por evento no
+   layout certificado, e decidir a precisão decimal real do valor (a
+   evidência física mostra precisão variável sem padding — ver "Conflito
+   registrado" na seção de layout). Isso ainda não foi escrito.
 
 Ver `.claude/skills/gerar-questor/SKILL.md` para o procedimento completo e
 `docs/BACKLOG.md` para o próximo passo.

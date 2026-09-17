@@ -35,7 +35,16 @@ def test_processa_lancamento_valor_vr(config):
     assert resultado["valor"] == "350,00"
 
 
-def test_bloqueia_cesta_da_matriz_pendente(config):
+def test_processa_cesta_basica_matriz_evento_1524(config):
+    resultado = processar_lancamento(
+        _lanc(unidade="matriz", codigo_evento=1524, valor_bruto="15.00"),
+        config,
+    )
+    assert resultado["codigo_evento"] == 1524
+    assert resultado["valor"] == "15,00"
+
+
+def test_bloqueia_lancamento_sem_codigo_evento(config):
     with pytest.raises(BlockedError):
         processar_lancamento(
             _lanc(unidade="matriz", codigo_evento=None, valor_bruto="15.00"),

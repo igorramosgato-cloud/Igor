@@ -39,12 +39,12 @@ def test_evento_50_matriz_he_100_noturna(config):
     assert evento["descricao"] == "HE 100% Noturna"
 
 
-def test_cesta_da_matriz_esta_pendente(config):
-    cesta = next(
-        e for e in config["unidades"]["matriz"]["eventos"] if e["codigo"] is None
-    )
-    assert is_evento_bloqueado(cesta)
-    assert cesta["status"] == "PENDENTE"
+def test_cesta_basica_da_matriz_confirmada_evento_1524(config):
+    cesta = get_evento(config, "matriz", 1524)
+    assert cesta["descricao"] == "Cesta Básica"
+    assert cesta["tipo"] == "valor"
+    assert cesta["natureza"] == "desconto"
+    assert not is_evento_bloqueado(cesta)
 
 
 def test_evento_1603_bloqueado_como_erro_historico(config):
