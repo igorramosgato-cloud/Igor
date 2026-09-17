@@ -1,11 +1,11 @@
 {
-  "atualizado_em": "2026-09-16",
+  "atualizado_em": "2026-09-17",
   "tarefas": [
     {
       "id": "P01",
       "titulo": "Variáveis + Benefícios ART LATEX → Questor",
       "status": "blocked",
-      "motivo_bloqueio": "Faltam layout real do importador, planilhas-fonte reais, chave de matching, código do evento Cesta Matriz, versão do conversor e exemplo de importação bem sucedida.",
+      "motivo_bloqueio": "Layout do importador confirmado apenas estruturalmente por print (CONDICIONAL); falta o arquivo físico para confirmar delimitador/encoding/precisão decimal. Faltam também planilhas-fonte reais, chave de matching, código do evento Cesta Matriz e versão do conversor.",
       "referencia": "docs/P01_ART_LATEX_QUESTOR.md"
     },
     {

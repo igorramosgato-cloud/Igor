@@ -48,3 +48,13 @@ Nenhum arquivo local aqui é usado para gerar produção diretamente. Ele é
 inventariado, comparado com `config/clientes/art_latex.json` e as regras em
 `.claude/rules/art-latex.md`, e qualquer divergência é registrada como
 conflito — nunca sobrescrita silenciosamente (ver `.claude/rules/governanca.md`).
+
+## Recebido até agora
+
+- **2026-09-17**: print de tela (não o arquivo físico) do layout genérico
+  de importação do Questor. Sem arquivo em disco, portanto sem hash para
+  registrar aqui ainda. Achados estruturais em
+  `docs/P01_ART_LATEX_QUESTOR.md` (classificados como CONDICIONAL) e
+  decisão registrada em `docs/DECISIONS.md` (2026-09-17). Ainda falta o
+  arquivo físico correspondente para virar entrada `CONFIRMADO` neste
+  manifest.

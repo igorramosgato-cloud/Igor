@@ -3,6 +3,26 @@
 Entradas mais recentes no topo. Formato definido em
 `.claude/skills/registrar-decisao/SKILL.md`.
 
+## 2026-09-17 — Estrutura do layout genérico de importação do Questor (CONDICIONAL)
+
+**Contexto:** homologação física do layout de importação do Questor para o
+P01 (ver `docs/P01_ART_LATEX_QUESTOR.md`).
+**Decisão:** confirmada estruturalmente (por print de tela, não pelo
+arquivo físico) a estrutura de um arquivo CSV (MS-DOS) de importação,
+válida para qualquer cliente/evento, um arquivo por evento: linha 1/coluna
+D = código do evento; linha 2/coluna D = tipo (`V`=Valor observado; `H`
+seria o equivalente para Hora); linha 3 = cabeçalho `CÓDIGO`/`NOME`; linha
+4+ = dados por funcionário. Classificação: **CONDICIONAL** — delimitador,
+encoding e precisão decimal real ainda não confirmados, pois só um print
+foi recebido, não o arquivo físico. Nenhum dado do print (nomes, valores,
+códigos de funcionário) foi reproduzido em qualquer arquivo do repositório.
+**Evidência:** print de tela fornecido pelo usuário em 2026-09-17,
+descrito como arquivo já aceito/importado com sucesso no Questor.
+**Impacto:** `docs/P01_ART_LATEX_QUESTOR.md` (seção "Layout do importador
+do Questor — achados"). Nenhuma mudança em `config/clientes/art_latex.json`
+ou `src/jrdp/serializers.py` — a divergência observada na precisão decimal
+dos valores não deve ser incorporada ao código sem o arquivo físico.
+
 ## 2026-09-16 — Regras de eventos ART LATEX (Filial e Matriz)
 
 **Contexto:** definição dos códigos de evento usados na importação de
