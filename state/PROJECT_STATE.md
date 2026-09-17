@@ -6,35 +6,41 @@
 
 Roadmap item 1 (Variáveis + Benefícios → Questor, cliente ART LATEX) em
 andamento. Regras de negócio parametrizadas e testadas (40/40 testes
-passando). Geração de arquivo de produção continua `BLOCKED`, mas o
-**gate de certificação física do layout do Questor passou (PASS)** em
-2026-09-17.
+passando).
 
-Certificado por análise binária de um arquivo `.csv` real (não Excel):
-encoding CP850, delimitador `;`, terminador CRLF, sem BOM/aspas, estrutura
-de 3 linhas de cabeçalho (código do evento, tipo, cabeçalho de colunas) +
-registros + padding. Implementado em `src/jrdp/questor_layout.py`,
-testado com fixture 100% sanitizada. Nenhum dado do arquivo real foi
-reproduzido em qualquer lugar versionado — ver
-`.claude/rules/homologacao-dados.md`. Detalhes em
-`docs/P01_ART_LATEX_QUESTOR.md` e `docs/DECISIONS.md` (2026-09-17).
+**Gate de layout do Questor: PASS** (2026-09-17) — contrato físico
+certificado por análise binária de arquivo real. Ver
+`src/jrdp/questor_layout.py`.
 
-Conflito registrado (não resolvido): a evidência física mostra que o valor
-não tem precisão decimal fixa, divergindo da regra atual de
-`serializers.serialize_valor` (sempre 2 casas). Só será decidido quando o
-gerador ART LATEX → Questor for implementado.
+**Planilhas de origem reais (Matriz e Filial) recebidas e inventariadas**
+(2026-09-17), mas revelaram um **novo bloqueio, mais sério que os
+anteriores**: a coluna de código do funcionário está vazia em 100% dos
+registros reais, em todas as abas com dado, nos dois arquivos. A única
+identificação disponível é nome livre — isso viola
+`.claude/rules/matching.md` diretamente. **Nenhum mapeamento
+origem→Questor será implementado até isso ser esclarecido.**
 
-Pendências restantes para desbloquear produção: planilhas reais
-Matriz/Filial da ART LATEX, confirmação da chave de matching, código do
-evento da Cesta da Matriz, versão do conversor, e confirmação de que
-eventos tipo `H` seguem o mesmo contrato de layout.
+Duas divergências também registradas (não resolvidas silenciosamente):
+1. A coluna da Cesta Básica da Matriz, que uma decisão anterior (baseada
+   em memória) associava a "coluna E Desconto", na planilha real tem
+   cabeçalho `CR`, não `Desconto`. Código do evento continua PENDENTE.
+2. O arquivo recebido como "Filial" tem cabeçalho interno dizendo
+   "MATRIZ" em várias abas — identidade do arquivo não confirmada.
+
+Detalhes completos em `docs/P01_ART_LATEX_QUESTOR.md` e
+`docs/DECISIONS.md` (entradas de 2026-09-17). Nenhum dado pessoal (nomes,
+CPF, códigos, valores) dos arquivos reais foi reproduzido em qualquer
+lugar versionado — ver `.claude/rules/homologacao-dados.md`.
 
 ## Próximo passo
 
-Planilhas reais de origem da ART LATEX (Matriz/Filial) — colocar em
-`homologacao/art_latex/questor/origem/` (fica só local, nunca versionado).
-A partir daí, iniciar o mapeamento origem → Questor (ainda não o gerador
-completo).
+**Esclarecer com o usuário** (não é uma decisão técnica que eu deva tomar
+sozinho) como o matching funciona na prática: existe um cadastro mestre
+código+nome separado destes dois arquivos? A macro VBA embutida faz esse
+de-para ao gerar? O preenchimento do código é manual pela equipe de DP?
+
+Sem essa resposta, o roadmap do P01 fica parado no passo "mapeamento
+origem → Questor" — o gate de layout (passo anterior) já passou.
 
 ## Como retomar
 

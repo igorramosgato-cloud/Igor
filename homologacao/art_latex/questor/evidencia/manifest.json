@@ -16,6 +16,32 @@
       "analisado_em": "2026-09-17",
       "recebido_em": "2026-09-17",
       "versao_layout_identificada": "layout genérico multi-cliente, 1 arquivo por evento, contrato: CP850 + ';' + CRLF + cabeçalho 'CÓDGIO;NOME;;'"
+    },
+    {
+      "arquivo_logico": "planilha_importacao_matriz.xlsm",
+      "pasta": "origem",
+      "sha256": "11434b9ab14a16e88652d0a6bbaa5f6d270eb520e15f766d3ed628b3cb61904f",
+      "tamanho_bytes": 11111207,
+      "cliente_origem_do_arquivo": "ART LATEX (Matriz)",
+      "status": "CONFIRMADO_ESTRUTURALMENTE",
+      "finalidade": "Planilha-fonte real de variáveis/benefícios da Matriz para o P01. Inventariada com openpyxl (abas, cabeçalhos, contagens agregadas) — nenhum dado pessoal individual foi extraído para este manifest ou qualquer outro arquivo versionado.",
+      "observacao": "Revelou bloqueio de matching: coluna COD. FUNC. vazia em 100% dos registros reais em todas as abas com dado; identificação só por nome livre, o que viola .claude/rules/matching.md. Ver docs/DECISIONS.md e docs/P01_ART_LATEX_QUESTOR.md (2026-09-17).",
+      "analisado_em": "2026-09-17",
+      "recebido_em": "2026-09-17",
+      "versao_layout_identificada": "arquivo .xlsm macro-habilitado (xl/vbaProject.bin), abas: Importacoes, Configuracoes, Cesta basica, Plano de saude, Vale-transporte, Vale-refeicao, Vale-compras, convenio farmacia, Adicional Noturno, Hora-extra"
+    },
+    {
+      "arquivo_logico": "planilha_importacao_filial.xlsm",
+      "pasta": "origem",
+      "sha256": "5e0b918b8803f32769a1f0e48d20c3dc243d78f94d0eb7a3415e48784c57727e",
+      "tamanho_bytes": 11117160,
+      "cliente_origem_do_arquivo": "ART LATEX (Filial)",
+      "status": "CONFIRMADO_ESTRUTURALMENTE",
+      "finalidade": "Planilha-fonte real de variáveis/benefícios da Filial para o P01. Inventariada com openpyxl (abas, cabeçalhos, contagens agregadas) — nenhum dado pessoal individual (incluindo CPF, presente no cabeçalho da aba Plano de saude) foi extraído para este manifest ou qualquer outro arquivo versionado.",
+      "observacao": "Mesmo bloqueio de matching do arquivo Matriz (COD. FUNC. vazio em 100% dos registros). Divergência não resolvida: o cabeçalho interno de várias abas diz 'ART LATEX ... MATRIZ', igual ao arquivo da Matriz. Ver docs/DECISIONS.md e docs/P01_ART_LATEX_QUESTOR.md (2026-09-17).",
+      "analisado_em": "2026-09-17",
+      "recebido_em": "2026-09-17",
+      "versao_layout_identificada": "arquivo .xlsm macro-habilitado (xl/vbaProject.bin), mesma estrutura de abas do arquivo Matriz, mais aba extra vazia Plan1"
     }
   ]
 }

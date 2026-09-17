@@ -3,6 +3,61 @@
 Entradas mais recentes no topo. Formato definido em
 `.claude/skills/registrar-decisao/SKILL.md`.
 
+## 2026-09-17 — Chave de matching ausente nas planilhas reais ART LATEX (BLOCKED)
+
+**Contexto:** inventário estrutural das planilhas reais de origem (Matriz e
+Filial, `.xlsm`) para o P01, próximo passo após o gate de layout do
+Questor.
+**Decisão:** a coluna `COD. FUNC.` está vazia em 100% dos registros reais,
+em todas as abas com dado, em ambos os arquivos. A única identificação
+presente é nome livre. Por `.claude/rules/matching.md`, isso **bloqueia**
+qualquer implementação de mapeamento origem→Questor até existir uma chave
+confiável — não será implementado matching por nome. Três hipóteses
+levantadas (cadastro mestre externo, matching feito pela macro VBA
+embutida, preenchimento manual pela equipe de DP) não foram confirmadas;
+pendente de resposta do usuário.
+**Evidência:** dois arquivos `.xlsm` reais fornecidos pelo usuário em
+2026-09-17 (Matriz: SHA-256
+`11434b9ab14a16e88652d0a6bbaa5f6d270eb520e15f766d3ed628b3cb61904f`; Filial:
+SHA-256 `5e0b918b8803f32769a1f0e48d20c3dc243d78f94d0eb7a3415e48784c57727e`),
+inventariados com `openpyxl` em modo leitura. Nenhum nome, CPF, código de
+funcionário ou valor individual foi reproduzido em qualquer arquivo do
+repositório — apenas contagens agregadas.
+**Impacto:** `docs/P01_ART_LATEX_QUESTOR.md` (seção "Planilhas de origem
+ART LATEX — achados"), `homologacao/art_latex/questor/evidencia/manifest.json`.
+Nenhum código de mapeamento foi escrito.
+
+## 2026-09-17 — Coluna da Cesta Básica da Matriz: evidência contradiz registro anterior
+
+**Contexto:** a entrada de 2026-09-16 (ver mais abaixo) registrava a Cesta
+Básica da Matriz como associada à "coluna E `Desconto`".
+**Decisão:** a evidência física (planilha real `Cesta basica` da Matriz)
+mostra que a coluna E tem cabeçalho `CR`, não `Desconto`; não existe coluna
+`Desconto` nesta aba. **Evidência física prevalece** sobre o registro
+anterior, que era baseado em consolidação de memória, não em arquivo. O
+código do evento da Cesta Básica da Matriz continua **PENDENTE** — esta
+correção é só sobre qual coluna de origem, não resolve o código do evento
+em si.
+**Evidência:** arquivo `.xlsm` real da Matriz (ver decisão acima para
+hash).
+**Impacto:** `docs/P01_ART_LATEX_QUESTOR.md`. `config/clientes/art_latex.json`
+mantém `"coluna_origem": "E", "coluna_origem_nome": "Desconto"` por
+enquanto — **não corrigido silenciosamente**; precisa de decisão explícita
+do usuário sobre se essa referência deve ser removida/atualizada.
+
+## 2026-09-17 — Divergência de identidade do arquivo "Filial" (não resolvida)
+
+**Contexto:** inventário do arquivo `.xlsm` recebido como "planilha de
+importação Filial".
+**Decisão:** registrado, não resolvido — o cabeçalho interno de várias
+abas desse arquivo (incluindo `Configuracoes`) contém o texto "ART LATEX
+IND E COM DE ARTEF DE LATEX- MATRIZ", igual ao do arquivo da Matriz. Não
+presumido erro de template nem dados trocados; fica como pendência de
+confirmação com o usuário.
+**Evidência:** arquivo `.xlsm` real da Filial (ver hash na decisão sobre
+matching acima).
+**Impacto:** `docs/P01_ART_LATEX_QUESTOR.md`.
+
 ## 2026-09-17 — Certificação física do layout genérico do Questor (gate: PASS)
 
 **Contexto:** substituição da evidência por print (CONDICIONAL, entrada
