@@ -1,5 +1,21 @@
 {
   "cliente": "ART LATEX",
   "sistema": "questor",
-  "arquivos": []
+  "arquivos": [
+    {
+      "arquivo_logico": "evento_1889_nova_farma.csv",
+      "pasta": "layout_aceito",
+      "sha256": "ec55b1904002719b36bf08e544472080cba76f9fbc67e57855f6389337ea01da",
+      "tamanho_bytes": 11382,
+      "cliente_origem_do_arquivo": "Nova Farma (usado como referência de layout genérico, válido também para ART LATEX)",
+      "evento_no_arquivo": "1889",
+      "tipo_no_arquivo": "V",
+      "status": "CONFIRMADO_POR_EVIDENCIA_FISICA",
+      "finalidade": "Certificação do contrato físico/binário do layout genérico de importação do Questor (encoding, delimitador, terminador de linha, estrutura de colunas). Não representa regra de negócio do cliente ART LATEX.",
+      "observacao": "Arquivo informado como já aceito/importado com sucesso no Questor. Analisado em nível de bytes com Python (não Excel/pandas). Gate de certificação estrutural: PASS. Ver docs/DECISIONS.md (2026-09-17) e docs/P01_ART_LATEX_QUESTOR.md.",
+      "analisado_em": "2026-09-17",
+      "recebido_em": "2026-09-17",
+      "versao_layout_identificada": "layout genérico multi-cliente, 1 arquivo por evento, contrato: CP850 + ';' + CRLF + cabeçalho 'CÓDGIO;NOME;;'"
+    }
+  ]
 }

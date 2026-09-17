@@ -5,7 +5,8 @@
       "id": "P01",
       "titulo": "Variáveis + Benefícios ART LATEX → Questor",
       "status": "blocked",
-      "motivo_bloqueio": "Layout do importador confirmado apenas estruturalmente por print (CONDICIONAL); falta o arquivo físico para confirmar delimitador/encoding/precisão decimal. Faltam também planilhas-fonte reais, chave de matching, código do evento Cesta Matriz e versão do conversor.",
+      "gate_layout_questor": "PASS (2026-09-17) — contrato físico certificado por análise binária de arquivo real; ver src/jrdp/questor_layout.py e tests/test_questor_layout.py",
+      "motivo_bloqueio": "Faltam planilhas-fonte reais Matriz/Filial da ART LATEX, confirmação da chave de matching, código do evento Cesta Matriz, versão do conversor, e confirmação de que eventos tipo H seguem o mesmo contrato de layout já certificado para tipo V.",
       "referencia": "docs/P01_ART_LATEX_QUESTOR.md"
     },
     {

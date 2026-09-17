@@ -3,7 +3,44 @@
 Entradas mais recentes no topo. Formato definido em
 `.claude/skills/registrar-decisao/SKILL.md`.
 
+## 2026-09-17 — Certificação física do layout genérico do Questor (gate: PASS)
+
+**Contexto:** substituição da evidência por print (CONDICIONAL, entrada
+anterior) por análise binária de um arquivo `.csv` real, informado como já
+aceito/importado com sucesso pelo Questor.
+**Decisão:** contrato físico **CONFIRMADO POR EVIDÊNCIA FÍSICA**: encoding
+CP850 (não Latin-1/UTF-8), delimitador `;`, terminador CRLF, sem BOM, sem
+aspas, linha 1 = `;;;<código do evento>`, linha 2 = `;;;<tipo>`, linha 3 =
+cabeçalho exato `CÓDGIO;NOME;;` (erro de digitação faz parte do contrato),
+linha 4+ = `<código>;<nome>;;<valor>` com coluna C sempre vazia. Valor sem
+precisão decimal fixa (0 a 5 casas no mesmo arquivo). Gate de certificação
+estrutural: **PASS**. Isso NÃO substitui nem confirma nenhuma regra de
+negócio da ART LATEX (eventos, Matriz/Filial, H,MM) — é só o contrato do
+sistema Questor, camada separada por design (ver
+`.claude/rules/governanca.md`).
+**Conflito identificado e não resolvido silenciosamente:**
+`src/jrdp/serializers.serialize_valor` assume 2 casas decimais fixas; a
+evidência física mostra precisão variável sem padding. A evidência física
+prevalece sobre a suposição anterior, mas a mudança de código só será
+aplicada quando o gerador ART LATEX → Questor for implementado (fora de
+escopo desta fase) — ver `docs/P01_ART_LATEX_QUESTOR.md`.
+**Evidência:** arquivo `.csv` real (nome do cliente de origem do arquivo:
+Nova Farma, usado como referência genérica de layout), SHA-256
+`ec55b1904002719b36bf08e544472080cba76f9fbc67e57855f6389337ea01da`, 11382
+bytes, analisado byte a byte com Python em 2026-09-17. Nenhum dado do
+arquivo (nomes, códigos de funcionário, valores) foi reproduzido em
+qualquer arquivo versionado.
+**Impacto:** `src/jrdp/questor_layout.py` (novo — parser do contrato, nunca
+reformata o valor), `tests/test_questor_layout.py` (12 testes, fixture
+sanitizada), `homologacao/art_latex/questor/evidencia/manifest.json`,
+`docs/P01_ART_LATEX_QUESTOR.md`. Nenhuma mudança em
+`config/clientes/art_latex.json` ou nas regras de negócio da ART LATEX.
+
 ## 2026-09-17 — Estrutura do layout genérico de importação do Questor (CONDICIONAL)
+
+> **Superada pela certificação física acima** (mesma data). Mantida aqui
+> por rastreabilidade histórica de como a evidência evoluiu de print para
+> arquivo físico.
 
 **Contexto:** homologação física do layout de importação do Questor para o
 P01 (ver `docs/P01_ART_LATEX_QUESTOR.md`).

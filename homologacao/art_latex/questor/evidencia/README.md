@@ -51,10 +51,13 @@ conflito — nunca sobrescrita silenciosamente (ver `.claude/rules/governanca.md
 
 ## Recebido até agora
 
-- **2026-09-17**: print de tela (não o arquivo físico) do layout genérico
-  de importação do Questor. Sem arquivo em disco, portanto sem hash para
-  registrar aqui ainda. Achados estruturais em
-  `docs/P01_ART_LATEX_QUESTOR.md` (classificados como CONDICIONAL) e
-  decisão registrada em `docs/DECISIONS.md` (2026-09-17). Ainda falta o
-  arquivo físico correspondente para virar entrada `CONFIRMADO` neste
-  manifest.
+- **2026-09-17 (manhã)**: print de tela (não o arquivo físico) do layout
+  genérico de importação do Questor. Classificado como CONDICIONAL —
+  superado pela entrada abaixo.
+- **2026-09-17**: arquivo físico `.csv` real recebido e analisado byte a
+  byte. Copiado para `../layout_aceito/evento_1889_nova_farma.csv`
+  (apenas local, nunca versionado). Entrada `CONFIRMADO_POR_EVIDENCIA_FISICA`
+  registrada em `manifest.json` (hash SHA-256, sem conteúdo). Gate de
+  certificação estrutural: **PASS**. Ver `docs/P01_ART_LATEX_QUESTOR.md` e
+  `docs/DECISIONS.md` (2026-09-17) para os achados completos e o conflito
+  registrado sobre precisão decimal de valores.
