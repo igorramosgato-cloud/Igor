@@ -1,6 +1,6 @@
 # P01 — Variáveis + Benefícios ART LATEX → Questor
 
-## Status: BLOCKED para geração de produção (layout, matching, Cesta Matriz, tipo H e identidade Filial: RESOLVIDOS; falta implementar o pipeline)
+## Status: BLOCKED para geração de produção (matching, Cesta Matriz e identidade Filial: RESOLVIDOS; layout tipo V e política fail-closed: PASS; layout tipo H e versão do Questor: PENDENTES por falta de evidência; pipeline ainda não iniciado)
 
 Regras de negócio já parametrizadas (`config/clientes/art_latex.json`,
 `.claude/rules/art-latex.md`) e cobertas por testes (`tests/test_art_latex.py`,
@@ -55,40 +55,57 @@ corretamente, sem persistir nenhum dado).
   (`382,18378`, `4,11`, `99,4`, `75`, `0`), sem sinal negativo e sem
   espaços.
 
-### CONFLITO REGISTRADO (não resolvido silenciosamente)
+### Precisão decimal de valores tipo V — caracterização refinada (2026-09-17)
 
-- `src/jrdp/serializers.serialize_valor` sempre formata com 2 casas
-  decimais fixas. A evidência física mostra que o Questor aceita — e o
-  arquivo real usa — precisão variável sem padding.
-- **Evidência física prevalece sobre a suposição anterior** (2 casas
-  fixas), porque foi validada por análise binária de um arquivo
-  efetivamente aceito pelo Questor, não por inferência.
-- **Proposta (não implementada ainda):** ao gerar o arquivo final para o
-  Questor, o valor deveria ser escrito com a precisão que a conta
-  realmente produzir, sem forçar 2 casas — mas isso só deve ser decidido
-  quando o gerador ART LATEX → Questor for de fato implementado (fora de
-  escopo desta fase, que é só a certificação do layout). Ver
-  `docs/DECISIONS.md` (2026-09-17).
+- Reanálise byte a byte dos 182 registros do `evento_1889`: distribuição
+  de casas decimais `{0: 46, 1: 11, 2: 49, 3: 2, 4: 6, 5: 68}`; nenhum
+  valor negativo; nenhum separador `.`; zero sempre `"0"` isolado (nunca
+  `"0,00"`); nenhum caso de casas > 1 terminando em `0` na amostra (não
+  prova que zero à direita seria removido se existisse — é ausência de
+  contra-exemplo, não uma regra confirmada).
+- **Caracterização proposta**: o padrão não é "um formato de N casas
+  variável" — é mais bem descrito como **"nenhum arredondamento é
+  aplicado; o valor bruto do cálculo é gravado como está"**. Isso muda a
+  implicação de design: a responsabilidade de não arredondar seria do
+  **cálculo** que produz o valor, não de uma regra de formatação de
+  string no serializer.
+- `src/jrdp/serializers.serialize_valor` continua divergente (força 2
+  casas fixas). **Evidência física prevalece** sobre a suposição
+  anterior, mas a mudança **não foi implementada ainda** — fica para
+  quando o gerador for construído, com teste de contrato antes da
+  mudança de código, conforme `.claude/rules/testing.md`.
 - `src/jrdp/questor_layout.py` já reflete a evidência: nunca reformata o
   valor, devolve a string bruta como está no arquivo.
 
-### Eventos tipo H (Hora) — regra de serialização confirmada pelo cliente (2026-09-17)
+### Eventos tipo H (Hora) — regra de negócio confirmada; certificação binária PENDENTE (2026-09-17)
 
-O usuário confirmou que o mesmo formato H,MM já implementado vale para
-eventos tipo `H`: exemplo dado, `07:31` de HE 50% deve virar `7,31`.
-`serialize_hmm("07:31")` já produz exatamente isso, sem alteração de
-código — travado em
-`tests/test_serializers.py::test_serialize_hmm_casos_confirmados`. A
-certificação **binária** de um arquivo `.csv` real com `tipo=H` (como foi
-feita para `tipo=V`) continua não realizada — isso é confirmação de regra
-de negócio, não evidência física direta do contrato de arquivo.
+- O usuário confirmou que o mesmo formato H,MM já implementado vale para
+  eventos tipo `H`: exemplo dado, `07:31` de HE 50% deve virar `7,31`.
+  `serialize_hmm("07:31")` já produz exatamente isso, sem alteração de
+  código — travado em
+  `tests/test_serializers.py::test_serialize_hmm_casos_confirmados`.
+- **Certificação binária NÃO realizada**: não existe, no acervo de
+  evidência atual, nenhum arquivo `.csv` físico com `tipo=H` aceito pelo
+  Questor — só o `evento_1889` (tipo V). Não foi fabricada nem inferida
+  essa estrutura a partir do tipo V. Isso fica genuinamente **PENDENTE**
+  até o usuário fornecer um arquivo real desse tipo.
+
+### Versão do Questor/importador — PENDENTE, sem evidência disponível (2026-09-17)
+
+- Inspecionados os metadados OOXML (`docProps/app.xml`, `docProps/core.xml`)
+  dos dois `.xlsm` reais — só revelam metadados do Microsoft Excel, não do
+  Questor.
+- Inspecionadas strings dentro de `xl/vbaProject.bin` (Matriz): encontrada
+  a macro `GerarLayoutImportacao` (módulo `Módulo3`) e a mensagem
+  `"Conversao para o Questor concluida."`, mas nenhuma versão numérica do
+  Questor ou do importador.
+- Fica **PENDENTE** — nenhum artefato disponível permite confirmar isso
+  sem inventar.
 
 ### CONDICIONAL / PENDENTE
 
-- Certificação binária de um arquivo `.csv` real com `tipo=H` (a regra de
-  valor já está confirmada pelo cliente, ver acima; falta só o arquivo
-  físico para o mesmo nível de certificação que o tipo `V` recebeu).
-- Versão específica do Questor/layout do conversor — não confirmada.
+- Certificação binária de um arquivo `.csv` real com `tipo=H` — ver acima.
+- Versão específica do Questor/layout do conversor — ver acima.
 
 ## Planilhas de origem ART LATEX — achados (2026-09-17)
 
@@ -160,10 +177,18 @@ originais ficam só localmente em
   (aba `Cesta basica` da Matriz × cadastro real): **117 nomes, 114
   resolvidos, 0 ambíguos, 3 não encontrados** (números agregados apenas —
   nenhum nome reproduzido em qualquer arquivo do repositório).
-- **Ainda não implementado**: o que fazer com os nomes não encontrados
-  antes de gerar produção (ex.: reportar para o DP corrigir manualmente no
-  cadastro ou na planilha de origem), e a montagem do arquivo final
-  combinando Matriz+Filial (ver próxima seção) usando esse cruzamento.
+- **Política fail-closed adotada (2026-09-17)**: nenhum arquivo de
+  produção é gerado se houver qualquer nome ambíguo OU não encontrado —
+  mesmo que seja só 1 de 117. `avaliar_gate_matching` sempre produz um
+  `RelatorioConferencia` (status `PASS`/`BLOCKED` + contagens), que pode
+  ser gerado mesmo quando bloqueado, para o analista corrigir a
+  origem/cadastro. Travado por 6 testes permanentes em
+  `tests/test_origem_matching.py` (ex.:
+  `test_gate_bloqueia_com_apenas_um_nao_encontrado`).
+- **Ainda não implementado**: a montagem do arquivo final combinando
+  Matriz+Filial (ver próxima seção) usando esse cruzamento, e o fluxo
+  operacional de correção quando o gate fica `BLOCKED` (quem corrige o
+  quê, onde).
 
 ### Cesta Básica da Matriz — código confirmado pelo usuário (2026-09-17)
 
@@ -200,14 +225,22 @@ originais ficam só localmente em
 3. ~~Chave de matching confiável~~ — **RESOLVIDA E IMPLEMENTADA**
    (`cadastro_ativos.py` + `origem_matching.py`).
 4. ~~Código do evento da Cesta Básica da Matriz~~ — **CONFIRMADO** (1524).
-5. ~~Regra de serialização para eventos tipo H~~ — **CONFIRMADA PELO
-   CLIENTE** (mesma regra H,MM já implementada). Falta só a certificação
-   binária de um arquivo `.csv` real com `tipo=H`.
+5. **Regra de negócio para eventos tipo H** — CONFIRMADA PELO CLIENTE
+   (mesma regra H,MM já implementada). **Certificação binária de um
+   `.csv` real com `tipo=H` continua PENDENTE** — não existe esse
+   arquivo no acervo de evidência ainda; precisa ser fornecido pelo
+   usuário, não pode ser inferido do tipo V.
 6. ~~Identidade do arquivo Filial~~ — **ESCLARECIDA** (é intencional; o
    objetivo é um único arquivo combinado Matriz+Filial por evento).
-7. Versão específica do Questor/layout do conversor — ainda não
-   confirmada.
-8. **Implementar o pipeline de geração propriamente dito**: extrair os
+7. **Versão específica do Questor/layout do conversor** — PENDENTE, sem
+   evidência disponível nos artefatos atuais (metadados dos `.xlsm` e
+   strings do VBA não revelam isso).
+8. ~~Política de matching (fail-closed)~~ — **ADOTADA E IMPLEMENTADA**
+   (`avaliar_gate_matching`, testes permanentes).
+9. **Decisão sobre a mudança em `serialize_valor`/cálculo** para refletir
+   "sem arredondamento" em vez de "2 casas fixas" — caracterização
+   proposta, mudança de código ainda não feita.
+10. **Implementar o pipeline de geração propriamente dito**: extrair os
    valores reais de cada aba de benefício (Matriz/Filial), resolver
    código via `origem_matching`, decidir o que fazer com nomes não
    encontrados, combinar Matriz+Filial em um único arquivo por evento no

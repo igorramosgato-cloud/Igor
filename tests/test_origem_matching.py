@@ -9,6 +9,7 @@ from jrdp.cadastro_ativos import RegistroCadastro
 from jrdp.origem_matching import (
     MatchingBlockedError,
     assert_sem_bloqueios,
+    avaliar_gate_matching,
     cruzar_por_nome,
 )
 
@@ -99,3 +100,65 @@ def test_multiplos_nomes_mistos_resolvido_ambiguo_e_ausente():
     assert resultado.resolvidos == {"FULANA DE TAL DOIS": "2"}
     assert "FULANO DE TAL UM" in resultado.ambiguos
     assert resultado.nao_encontrados == ["NOME AUSENTE"]
+
+
+# --- Política fail-closed (permanente) ---
+# 0 não encontrados + 0 ambíguos -> PASS, pode gerar produção.
+# Qualquer não encontrado OU qualquer ambíguo -> BLOCKED, nunca gera
+# arquivo parcial. O relatório de conferência é sempre produzido, mesmo
+# quando BLOCKED. Ver docs/DECISIONS.md (2026-09-17).
+
+
+def test_gate_passa_quando_tudo_resolvido_sem_ambiguidade():
+    resultado = cruzar_por_nome(["FULANO DE TAL UM", "FULANA DE TAL DOIS"], CADASTRO_BASE)
+    relatorio = avaliar_gate_matching(resultado)
+    assert relatorio.status == "PASS"
+    assert relatorio.pode_gerar_arquivo_producao is True
+    assert relatorio.resolvidos == 2
+    assert relatorio.ambiguos == 0
+    assert relatorio.nao_encontrados == 0
+    assert relatorio.total_origem == 2
+
+
+def test_gate_bloqueia_com_apenas_um_nao_encontrado():
+    """Fail-closed: mesmo 114 de 117 resolvidos não libera produção."""
+    cadastro = CADASTRO_BASE + [_registro("3", "FULANO TRES", "333.333.333-33")]
+    resultado = cruzar_por_nome(
+        ["FULANO DE TAL UM", "FULANA DE TAL DOIS", "FULANO TRES", "NOME INEXISTENTE"],
+        cadastro,
+    )
+    relatorio = avaliar_gate_matching(resultado)
+    assert relatorio.status == "BLOCKED"
+    assert relatorio.pode_gerar_arquivo_producao is False
+    assert relatorio.resolvidos == 3
+    assert relatorio.nao_encontrados == 1
+    assert relatorio.total_origem == 4
+
+
+def test_gate_bloqueia_com_apenas_um_ambiguo():
+    cadastro_com_duplicata = CADASTRO_BASE + [
+        _registro("3", "FULANO DE TAL UM", "333.333.333-33")
+    ]
+    resultado = cruzar_por_nome(
+        ["FULANO DE TAL UM", "FULANA DE TAL DOIS"], cadastro_com_duplicata
+    )
+    relatorio = avaliar_gate_matching(resultado)
+    assert relatorio.status == "BLOCKED"
+    assert relatorio.pode_gerar_arquivo_producao is False
+    assert relatorio.ambiguos == 1
+
+
+def test_gate_relatorio_e_sempre_produzido_mesmo_bloqueado():
+    """O relatório de conferência nunca falha/levanta exceção — só o
+    arquivo de produção fica proibido. Quem quiser bloquear de fato deve
+    chamar assert_sem_bloqueios separadamente."""
+    resultado = cruzar_por_nome(["NOME INEXISTENTE"], CADASTRO_BASE)
+    relatorio = avaliar_gate_matching(resultado)  # não deve levantar
+    assert relatorio.status == "BLOCKED"
+
+
+def test_gate_lista_vazia_de_origem_passa_trivialmente():
+    resultado = cruzar_por_nome([], CADASTRO_BASE)
+    relatorio = avaliar_gate_matching(resultado)
+    assert relatorio.status == "PASS"
+    assert relatorio.total_origem == 0

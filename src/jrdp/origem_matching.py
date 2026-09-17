@@ -103,3 +103,43 @@ def assert_sem_bloqueios(resultado: ResultadoCruzamento) -> None:
         "Matching BLOCKED — não é seguro gerar o arquivo do Questor:\n\n"
         + "\n\n".join(partes)
     )
+
+
+@dataclass(frozen=True)
+class RelatorioConferencia:
+    """Relatório de prévia/conferência do matching — sempre pode ser
+    gerado, mesmo quando o gate está BLOCKED. Nunca confundir com o
+    arquivo de produção para o Questor: este relatório é só para o
+    analista revisar e corrigir a origem/cadastro antes de tentar de novo.
+    """
+
+    status: str  # "PASS" ou "BLOCKED"
+    total_origem: int
+    resolvidos: int
+    ambiguos: int
+    nao_encontrados: int
+    pode_gerar_arquivo_producao: bool
+
+
+def avaliar_gate_matching(resultado: ResultadoCruzamento) -> RelatorioConferencia:
+    """Política fail-closed: só libera geração de arquivo de produção
+    quando 100% dos nomes de origem foram resolvidos sem ambiguidade.
+
+    Qualquer nome ambíguo OU não encontrado bloqueia a geração do arquivo
+    de produção — nunca um arquivo "quase completo". O relatório de
+    conferência (esta função) sempre pode ser produzido, para o analista
+    corrigir a origem/cadastro; é o arquivo de produção que fica proibido
+    enquanto houver qualquer bloqueio. Ver docs/DECISIONS.md (2026-09-17).
+    """
+    bloqueado = resultado.tem_bloqueio()
+    total_origem = (
+        len(resultado.resolvidos) + len(resultado.ambiguos) + len(resultado.nao_encontrados)
+    )
+    return RelatorioConferencia(
+        status="BLOCKED" if bloqueado else "PASS",
+        total_origem=total_origem,
+        resolvidos=len(resultado.resolvidos),
+        ambiguos=len(resultado.ambiguos),
+        nao_encontrados=len(resultado.nao_encontrados),
+        pode_gerar_arquivo_producao=not bloqueado,
+    )

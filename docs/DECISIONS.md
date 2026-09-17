@@ -3,6 +3,68 @@
 Entradas mais recentes no topo. Formato definido em
 `.claude/skills/registrar-decisao/SKILL.md`.
 
+## 2026-09-17 — Contrato físico do serializer (V), certificação H (PENDENTE), versão (PENDENTE), política fail-closed
+
+**Contexto:** antes de implementar o pipeline origem→Questor, o usuário
+pediu para fechar o contrato físico do serializer, para não construir a
+camada de negócio em cima de uma hipótese que pudesse exigir retrabalho.
+
+**1) Precisão decimal de valores tipo V — caracterização refinada.**
+Reanálise byte a byte do arquivo real `evento_1889` (182 registros):
+distribuição de casas decimais `{0: 46, 1: 11, 2: 49, 3: 2, 4: 6, 5: 68}`;
+nenhum valor negativo; nenhum separador `.`; zero sempre representado como
+`"0"` isolado (nunca `"0,00"`); nenhum caso de casas decimais > 1
+terminando em `0` foi encontrado na amostra (não é prova de que o Questor
+"removeria" um zero à direita se existisse — é só ausência de
+contra-exemplo nesta amostra). **Caracterização proposta**: o padrão
+observado é mais bem descrito como **"nenhum arredondamento é aplicado —
+o valor bruto de um cálculo é gravado como está"**, não como um "formato
+de N casas variável". Isso muda a implicação para o gerador: a
+responsabilidade de não arredondar é do **cálculo** que produz o valor,
+não de uma regra de formatação de string. `src/jrdp/serializers.serialize_valor`
+continua divergente (força 2 casas fixas) — **não alterado ainda**, essa
+mudança fica para quando o gerador for implementado, com teste de
+contrato antes da mudança.
+
+**2) Certificação binária de um CSV real tipo H — NÃO REALIZADA.** Não
+existe, no acervo de evidência atual, nenhum arquivo `.csv` físico com
+`tipo=H` aceito pelo Questor — só o `evento_1889` (tipo V). **Não fabricar
+nem inferir** essa estrutura a partir do tipo V. Fica `PENDENTE`
+explicitamente até o usuário fornecer um arquivo real desse tipo. A regra
+de negócio (H,MM, ex. `07:31` → `7,31`) continua confirmada
+separadamente (ver entrada anterior) — o que falta é só a certificação
+binária do arquivo, não a regra de valor.
+
+**3) Versão do Questor/importador — PENDENTE, sem evidência.** Inspeção
+dos metadados OOXML (`docProps/app.xml`, `docProps/core.xml`) dos dois
+`.xlsm` reais mostra só metadados do Excel (não do Questor). Inspeção de
+strings dentro de `xl/vbaProject.bin` encontrou a macro `GerarLayoutImportacao`
+(módulo `Módulo3`) e a mensagem `"Conversao para o Questor concluida."`,
+mas nenhuma versão numérica do Questor ou do importador. Fica `PENDENTE`
+— nenhum artefato disponível permite confirmar isso sem inventar.
+
+**4) Política fail-closed para matching — adotada e travada por testes
+permanentes.** Nenhum arquivo de produção é gerado se houver qualquer
+nome ambíguo OU não encontrado no cruzamento origem×cadastro — mesmo que
+seja só 1 de 117. O relatório de conferência (`RelatorioConferencia`,
+`avaliar_gate_matching`) sempre pode ser produzido, com status
+`PASS`/`BLOCKED` e contagens, para o analista corrigir a origem/cadastro;
+é a geração do arquivo de produção que fica proibida enquanto
+`pode_gerar_arquivo_producao` for `False`. Implementado em
+`src/jrdp/origem_matching.py`, travado por 6 novos testes em
+`tests/test_origem_matching.py` (14 no total no módulo).
+
+**Evidência:** arquivo real `evento_1889` (reanálise), metadados e
+`vbaProject.bin` dos dois `.xlsm` reais já em
+`homologacao/art_latex/questor/origem/`. Nenhum dado pessoal foi
+reproduzido.
+**Impacto:** `src/jrdp/origem_matching.py` (novo: `RelatorioConferencia`,
+`avaliar_gate_matching`), `tests/test_origem_matching.py`. Nenhuma
+mudança em `serializers.py` ainda. Pipeline origem→Questor continua não
+implementado — depende de: item 2 (arquivo tipo H real) e decisão
+explícita sobre a mudança de `serialize_valor`/cálculo antes de
+implementar.
+
 ## 2026-09-17 — Cinco pendências do P01 resolvidas pelo usuário
 
 **Contexto:** cinco pontos em aberto listados ao usuário após a

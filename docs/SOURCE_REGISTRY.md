@@ -10,10 +10,12 @@
 | Planilha de origem ART LATEX — Filial (`.xlsm`) | Arquivo real fornecido pelo usuário, SHA-256 `5e0b918b8803f32769a1f0e48d20c3dc243d78f94d0eb7a3415e48784c57727e` | CONFIRMADO estruturalmente; contém coluna CPF (dado sensível); divergência de identidade não resolvida (cabeçalho interno diz "MATRIZ"); arquivo em si NUNCA versionado | 2026-09-17 | Ver `docs/P01_ART_LATEX_QUESTOR.md` |
 | Cadastro "Base de ativos" ART LATEX (Contrato/Nome/CPF) | Relatório real extraído do sistema de origem do usuário, SHA-256 `74c35532b88350be10a7a7a8e121230bfa1aa44beb5c5a41632b9cf5032653c3` | CONFIRMADO POR EVIDÊNCIA FÍSICA + confirmação explícita do usuário (Contrato == COD. FUNC. QUESTOR); resolve o bloqueio de matching; arquivo em si NUNCA versionado, contém CPF real | 2026-09-17 | Ver `docs/DECISIONS.md`, `docs/P01_ART_LATEX_QUESTOR.md` |
 
-Ainda não recebido/confirmado: um arquivo do layout Questor de um evento
-tipo `H` (Hora), dados reais nas abas `Plano de saude` e `Hora-extra`
-(vieram vazias em ambos os arquivos), esclarecimento sobre a divergência
-de identidade do arquivo Filial, código do evento da Cesta Básica da
-Matriz, e versão específica do Questor/conversor. Ver
+Ainda não recebido/confirmado (2026-09-17): um arquivo `.csv` real do
+layout Questor com um evento tipo `H` (Hora) — necessário para
+certificação binária, não pode ser inferido do tipo V já certificado;
+dados reais nas abas `Plano de saude` e `Hora-extra` (vieram vazias em
+ambos os `.xlsm`); e a versão específica do Questor/importador (inspeção
+de metadados OOXML e do `vbaProject.bin` dos `.xlsm` reais não revelou
+isso — só a macro `GerarLayoutImportacao`). Ver
 `docs/BACKLOG.md` → "Próximo passo imediato" e
 `.claude/skills/gerar-questor/SKILL.md`.
