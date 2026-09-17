@@ -3,7 +3,70 @@
 Entradas mais recentes no topo. Formato definido em
 `.claude/skills/registrar-decisao/SKILL.md`.
 
+## 2026-09-17 — Correção: Decimal, não float; e camada canônica do pipeline (sem liberar produção)
+
+**Contexto:** revisão crítica da entrada anterior (logo abaixo). O
+usuário apontou corretamente que "sem arredondamento" não pode significar
+serializar `float` bruto do Python/Excel — `Decimal(19.1)` produz
+`Decimal('19.100000000000001421085471520200371742248535156250')`, um
+artefato binário que a evidência do CSV real nunca mostrou. A evidência
+observada (ausência de padding/arredondamento fixo) não autoriza
+extrapolar para "aceita lixo de ponto flutuante".
+
+**Decisão sobre decimais:** o motor deve usar `Decimal`, nunca `float`,
+para valores tipo V. Regra travada em código e teste: nunca construir
+`Decimal` a partir de `float` diretamente (sempre via `str(float)`
+primeiro); nunca `round()`/`quantize()` para forçar casas. Implementado
+em `src/jrdp/decimais.py` (`valor_origem_para_decimal`,
+`serializar_decimal_livre`), com teste explícito provando que o
+contra-exemplo clássico (`Decimal(19.1)` vs `Decimal(str(19.1))`) não
+vaza para o resultado final (`tests/test_decimais.py`, 16 testes).
+Achado adicional, também evidência-based: valores inteiros (`0`, `75`)
+saem sem separador decimal no arquivo real — isso virou regra de
+serialização (não é invenção; é o que os 33+13 casos observados mostram).
+
+**Decisão sobre avançar sem o tipo H certificado:** construída a camada
+canônica do pipeline (extração→normalização→matching→mapeamento de
+evento→combinação Matriz+Filial→validação→relatório de conferência),
+**sem liberar exportação de produção** para nenhum tipo, e mantendo tipo
+H explicitamente `BLOCKED` por design (`QuestorExporterH` sempre levanta
+erro, incondicionalmente). Isso permite avançar ~80-90% da automação sem
+fingir que o contrato H está certificado.
+
+**Novos módulos:** `src/jrdp/canonico.py` (`LancamentoCanonico`,
+`RegistroOrigemBruto`, `agrupar_por_evento`), `src/jrdp/pipeline.py`
+(`construir_lancamentos_evento`, `construir_lancamentos_cesta_basica`),
+`src/jrdp/conferencia.py` (`RelatorioEvento`, `gerar_relatorio_evento`),
+`src/jrdp/exportadores.py` (`QuestorExporterV`, `QuestorExporterH`,
+`ExportacaoBlockedError`). 17 novos testes em `tests/test_pipeline.py`,
+cobrindo: matching 100%, não encontrado, ambíguo, evento PENDENTE, evento
+desconhecido, valor bruto inválido, rastreabilidade origem→canônico,
+Cesta Básica Matriz+Filial combinadas em um conjunto por evento,
+relatório PASS/BLOCKED, exportador V bloqueado por matching incompleto,
+exportador H sempre bloqueado.
+
+**Validação contra dados reais** (só em memória, nenhum dado persistido):
+Cesta Básica da Matriz (117 nomes reais) → relatório `BLOCKED`, 114
+encontrados, 3 não encontrados, 0 ambíguos, `pode_exportar() == False`;
+`QuestorExporterV` recusou exportar, exatamente como projetado — fail-closed
+mesmo com 114 de 117 resolvidos.
+
+**Evidência:** reanálise do `evento_1889` para a regra de zero/inteiro
+sem separador; execução real do pipeline contra `base_ativos_art_latex.csv`
+e `planilha_importacao_matriz.xlsm` (já em
+`homologacao/art_latex/questor/origem/`).
+**Impacto:** `src/jrdp/decimais.py`, `src/jrdp/canonico.py`,
+`src/jrdp/pipeline.py`, `src/jrdp/conferencia.py`,
+`src/jrdp/exportadores.py` (todos novos), `tests/test_decimais.py`,
+`tests/test_pipeline.py` (novos). `QuestorExporterV` não foi ligado a
+`GERAR_PARA_O_QUESTOR.bat`/CLI — é só uma função de biblioteca testável,
+não uma liberação de produção. `BLOCKED` global do P01 não foi removido.
+
 ## 2026-09-17 — Contrato físico do serializer (V), certificação H (PENDENTE), versão (PENDENTE), política fail-closed
+
+> **Ver correção na entrada acima** (mesma data): a proposta original de
+> "escrever a precisão que a conta produzir" foi refinada para "usar
+> Decimal, nunca float" antes de qualquer implementação.
 
 **Contexto:** antes de implementar o pipeline origem→Questor, o usuário
 pediu para fechar o contrato físico do serializer, para não construir a

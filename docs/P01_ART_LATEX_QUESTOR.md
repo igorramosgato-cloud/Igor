@@ -1,6 +1,6 @@
 # P01 — Variáveis + Benefícios ART LATEX → Questor
 
-## Status: BLOCKED para geração de produção (matching, Cesta Matriz e identidade Filial: RESOLVIDOS; layout tipo V e política fail-closed: PASS; layout tipo H e versão do Questor: PENDENTES por falta de evidência; pipeline ainda não iniciado)
+## Status: BLOCKED para geração de produção (camada canônica do pipeline construída e testada; tipo H e versão do Questor: PENDENTES por falta de evidência; nenhum exportador ligado à produção)
 
 Regras de negócio já parametrizadas (`config/clientes/art_latex.json`,
 `.claude/rules/art-latex.md`) e cobertas por testes (`tests/test_art_latex.py`,
@@ -65,17 +65,22 @@ corretamente, sem persistir nenhum dado).
   contra-exemplo, não uma regra confirmada).
 - **Caracterização proposta**: o padrão não é "um formato de N casas
   variável" — é mais bem descrito como **"nenhum arredondamento é
-  aplicado; o valor bruto do cálculo é gravado como está"**. Isso muda a
-  implicação de design: a responsabilidade de não arredondar seria do
-  **cálculo** que produz o valor, não de uma regra de formatação de
-  string no serializer.
-- `src/jrdp/serializers.serialize_valor` continua divergente (força 2
-  casas fixas). **Evidência física prevalece** sobre a suposição
-  anterior, mas a mudança **não foi implementada ainda** — fica para
-  quando o gerador for construído, com teste de contrato antes da
-  mudança de código, conforme `.claude/rules/testing.md`.
-- `src/jrdp/questor_layout.py` já reflete a evidência: nunca reformata o
-  valor, devolve a string bruta como está no arquivo.
+  aplicado; o valor bruto do cálculo é gravado como está"**.
+- **Correção crítica (2026-09-17, mesmo dia)**: "sem arredondamento" NÃO
+  autoriza serializar `float` bruto do Python/Excel. `Decimal(19.1)`
+  produz um artefato binário de 50+ dígitos que a evidência nunca
+  mostrou. Implementado `src/jrdp/decimais.py`: o motor usa `Decimal`
+  (nunca `float` direto — sempre via `str(float)` primeiro), sem
+  `round()`/`quantize()`. Valores inteiros saem sem separador decimal
+  (`0`, `75`), conforme evidência real. 16 testes em
+  `tests/test_decimais.py`, incluindo o contra-exemplo clássico
+  `Decimal(19.1)` vs `Decimal(str(19.1))`.
+- `src/jrdp/serializers.serialize_valor` (o antigo, com 2 casas fixas)
+  continua existindo mas foi **substituído** por
+  `decimais.serializar_decimal_livre` na camada canônica do pipeline
+  (`src/jrdp/pipeline.py`) — é este último que reflete a evidência real.
+- `src/jrdp/questor_layout.py` já refletia a evidência desde antes: nunca
+  reformata o valor, devolve a string bruta como está no arquivo.
 
 ### Eventos tipo H (Hora) — regra de negócio confirmada; certificação binária PENDENTE (2026-09-17)
 
@@ -216,6 +221,42 @@ originais ficam só localmente em
   único arquivo por evento**, combinando registros de Matriz e Filial —
   não dois arquivos separados. Isso ainda não foi implementado.
 
+## Camada canônica do pipeline — construída e testada, produção NÃO liberada (2026-09-17)
+
+Implementada a camada entre origem e exportação final, separando
+rigorosamente regra de negócio, cálculo, validação e serialização física:
+
+- `src/jrdp/canonico.py` — `LancamentoCanonico` (modelo interno com
+  rastreabilidade completa: cliente, competência, unidade, código,
+  evento, tipo, valores original/normalizado, arquivo/aba/linha de
+  origem, regra aplicada, status de matching/validação) e
+  `agrupar_por_evento`.
+- `src/jrdp/pipeline.py` — `construir_lancamentos_evento` (matching +
+  regra do evento + serialização) e `construir_lancamentos_cesta_basica`
+  (Matriz+Filial combinadas, R$1,00/colaborador listado).
+- `src/jrdp/conferencia.py` — `RelatorioEvento`/`gerar_relatorio_evento`:
+  contagens por unidade, matching, validade, soma (só tipo valor), status
+  PASS/BLOCKED. Sempre gerável, mesmo bloqueado.
+- `src/jrdp/exportadores.py` — `QuestorExporterV` (só produz saída
+  quando o relatório está PASS — fail-closed, nunca arquivo parcial) e
+  `QuestorExporterH` (bloqueia **incondicionalmente**, independente do
+  relatório — não existe arquivo `tipo=H` real para basear isso).
+
+**Nenhum exportador foi ligado a `GERAR_PARA_O_QUESTOR.bat` ou à CLI** —
+são funções de biblioteca testáveis, não uma liberação de produção. O
+`BLOCKED` global do P01 continua valendo.
+
+**Validação contra dados reais** (só em memória, nenhum dado persistido):
+Cesta Básica da Matriz (117 nomes reais) processada pela pipeline
+completa → `RelatorioEvento(status="BLOCKED", encontrados=114,
+nao_encontrados=3, ambiguos=0)`, `pode_exportar() == False`;
+`QuestorExporterV` recusou exportar. Fail-closed confirmado
+funcionando mesmo com 114 de 117 resolvidos.
+
+37 novos testes (`tests/test_decimais.py`: 16, `tests/test_pipeline.py`:
+17, mais os 4 do `origem_matching.py` fail-closed), todos com dados
+fictícios.
+
 ## Pendências para liberar a geração real
 
 1. ~~Layout físico/binário do importador do Questor (tipo V)~~ —
@@ -229,24 +270,29 @@ originais ficam só localmente em
    (mesma regra H,MM já implementada). **Certificação binária de um
    `.csv` real com `tipo=H` continua PENDENTE** — não existe esse
    arquivo no acervo de evidência ainda; precisa ser fornecido pelo
-   usuário, não pode ser inferido do tipo V.
+   usuário, não pode ser inferido do tipo V. `QuestorExporterH` bloqueia
+   incondicionalmente até isso mudar.
 6. ~~Identidade do arquivo Filial~~ — **ESCLARECIDA** (é intencional; o
-   objetivo é um único arquivo combinado Matriz+Filial por evento).
+   objetivo é um único arquivo combinado Matriz+Filial por evento, já
+   implementado em `construir_lancamentos_cesta_basica`/`agrupar_por_evento`).
 7. **Versão específica do Questor/layout do conversor** — PENDENTE, sem
    evidência disponível nos artefatos atuais (metadados dos `.xlsm` e
    strings do VBA não revelam isso).
 8. ~~Política de matching (fail-closed)~~ — **ADOTADA E IMPLEMENTADA**
-   (`avaliar_gate_matching`, testes permanentes).
-9. **Decisão sobre a mudança em `serialize_valor`/cálculo** para refletir
-   "sem arredondamento" em vez de "2 casas fixas" — caracterização
-   proposta, mudança de código ainda não feita.
-10. **Implementar o pipeline de geração propriamente dito**: extrair os
-   valores reais de cada aba de benefício (Matriz/Filial), resolver
-   código via `origem_matching`, decidir o que fazer com nomes não
-   encontrados, combinar Matriz+Filial em um único arquivo por evento no
-   layout certificado, e decidir a precisão decimal real do valor (a
-   evidência física mostra precisão variável sem padding — ver "Conflito
-   registrado" na seção de layout). Isso ainda não foi escrito.
+   (`avaliar_gate_matching` + `RelatorioEvento`, testes permanentes).
+9. ~~Decisão sobre a serialização de valores tipo V~~ — **IMPLEMENTADA**
+   com `Decimal` (nunca `float`), sem arredondamento artificial (ver
+   `src/jrdp/decimais.py`).
+10. ~~Camada canônica do pipeline~~ — **CONSTRUÍDA E TESTADA**
+    (extração→normalização→matching→mapeamento de evento→combinação
+    Matriz+Filial→validação→relatório). **Falta ainda**: a extração real
+    das demais abas de benefício além de Cesta Básica (Vale-refeição,
+    Vale-compras, convênio farmácia, Adicional Noturno, Hora-extra — essa
+    última sem dados reais para validar), e a decisão operacional de
+    quem/como corrige nomes não encontrados quando o gate fica BLOCKED.
+11. **Liberar exportação de produção** — não liberado nesta fase. Falta:
+    itens 5 e 7 acima, testes end-to-end completos, e decisão explícita
+    de homologação (ver `.claude/skills/homologar-automacao/SKILL.md`).
 
 Ver `.claude/skills/gerar-questor/SKILL.md` para o procedimento completo e
 `docs/BACKLOG.md` para o próximo passo.
