@@ -1,6 +1,6 @@
 # P01 — Variáveis + Benefícios ART LATEX → Questor
 
-## Status: BLOCKED para geração de produção (camada canônica do pipeline construída e testada; tipo H e versão do Questor: PENDENTES por falta de evidência; nenhum exportador ligado à produção)
+## Status: BLOCKED para geração de produção (extração real de 5 abas implementada e validada; tipo H, versão do Questor, Vale-transporte e eventos Matriz sem código: PENDENTES; nenhum exportador ligado à produção)
 
 Regras de negócio já parametrizadas (`config/clientes/art_latex.json`,
 `.claude/rules/art-latex.md`) e cobertas por testes (`tests/test_art_latex.py`,
@@ -257,6 +257,81 @@ funcionando mesmo com 114 de 117 resolvidos.
 17, mais os 4 do `origem_matching.py` fail-closed), todos com dados
 fictícios.
 
+## Extração real das demais abas — implementada e validada (2026-09-17)
+
+Sem esperar o CSV tipo H, avançada a extração real das fontes ART LATEX
+sobre a camada canônica já existente. Nenhuma produção liberada.
+
+### Conflito resolvido a favor da evidência física
+
+Uma instrução recebida pedia "Matriz: utilizar o valor da coluna E
+'Desconto'" para a Cesta Básica — isso **contradiz** a evidência física
+já registrada em 2026-09-17 (coluna E real é `CR`, sem coluna de valor
+na aba). **Não segui a instrução textual**: implementada a regra já
+confirmada com o usuário (contagem de colaboradores listados, R$1,00
+cada). Ver `docs/DECISIONS.md`.
+
+### H,MM nunca é unidade aritmética — proteção permanente
+
+`src/jrdp/minutos.py` trata horas como minutos (inteiro) para qualquer
+soma/QA. `01:52 + 00:32 = 144 minutos (02:24)`, nunca `"1,52" + "0,32" =
+1,84`. `conferencia.gerar_relatorio_evento` usa isso para
+`total_horas_minutos`, nunca soma a string serializada. Teste permanente
+em `tests/test_minutos.py`.
+
+### Extratores implementados (`src/jrdp/extratores/`)
+
+- **`valor_simples.py`** — padrão `COD.FUNC/NOME/VALOR`: Vale-refeição,
+  Vale-compras, Convênio Farmácia, Adicional Noturno.
+- **`cesta_basica.py`** — só nomes; valor é regra de negócio.
+- **`horas.py`** — Hora-extra (HE 50%/100%). **NÃO validado contra
+  dados reais** — a aba segue com 0 registros reais nos dois arquivos.
+  Suporte a `datetime.time`/string/fração de dia é hipótese, não
+  certificação.
+- **`vale_transporte.py`** — **propositalmente não funcional (PENDENTE)**.
+  Achado: ambos os arquivos só têm uma tabela de totalizadores por
+  centro de custo/departamento — **zero registros reais de funcionário**.
+  Também não há confirmação de qual coluna (`TOTAL`, `DESCONTO`,
+  `ACRÉSCIMO`, `VALOR DA CARGA`) alimenta o evento 815.
+
+### Achado novo — eventos da Matriz sem código confirmado (PENDENTE)
+
+A Matriz real tem abas com dados reais de **Vale-refeição, Vale-compras,
+Convênio Farmácia e Adicional Noturno** — mas
+`config/clientes/art_latex.json` só cataloga os eventos 50 e 1524 para a
+Matriz. **Não assumido** que os códigos da Filial (1955, 813, 806, 96)
+valem também para a Matriz — extração estrutural funciona, mas a
+construção do lançamento canônico para esses eventos na Matriz fica
+corretamente `invalido` (evento não cadastrado), não um erro de dado.
+Precisa de confirmação do usuário: os códigos são os mesmos da Filial,
+são diferentes, ou esses benefícios simplesmente não existem para a
+Matriz (e os dados na planilha seriam de outra natureza)?
+
+### Achado de qualidade de dado — não é bug do extrator
+
+A aba `Vale-refeicao` da Filial tem, a partir da linha ~239, um bloco de
+762 linhas com `#REF!` (fórmula quebrada) numa coluna não usada (H), sem
+relação com os registros reais (colunas A-C). O extrator ignora isso
+corretamente por não olhar essa coluna.
+
+### Validação real agregada (nenhum dado individual persistido)
+
+| Evento | Unidade(s) | Total | Encontrados | Não enc. | Ambíguos | Status |
+|---|---|---|---|---|---|---|
+| 1955 VR | Filial | 233 | 190 | 43 | 0 | BLOCKED |
+| 813 Compras | Filial | 21 | 16 | 5 | 0 | BLOCKED |
+| 806 Farmácia | Filial | 7 | 5 | 2 | 0 | BLOCKED |
+| 96 Ad. Noturno | Filial | 44 | 33 | 11 | 0 | BLOCKED |
+| 1524 Cesta | Matriz+Filial | 317 (117+200) | 304 | 13 | 0 | BLOCKED |
+
+Todos `BLOCKED` pela política fail-closed — nenhum tem 0 não encontrados
+ainda. Isso é esperado e correto: só confirma que o gate funciona: a
+correção dos nomes não encontrados é trabalho operacional do DP, não do
+código.
+
+25 novos testes (`tests/test_minutos.py`: 7, `tests/test_extratores.py`:
+13, `tests/test_conferencia.py`: 5). **147/147 testes no total.**
+
 ## Pendências para liberar a geração real
 
 1. ~~Layout físico/binário do importador do Questor (tipo V)~~ —
@@ -285,14 +360,26 @@ fictícios.
    `src/jrdp/decimais.py`).
 10. ~~Camada canônica do pipeline~~ — **CONSTRUÍDA E TESTADA**
     (extração→normalização→matching→mapeamento de evento→combinação
-    Matriz+Filial→validação→relatório). **Falta ainda**: a extração real
-    das demais abas de benefício além de Cesta Básica (Vale-refeição,
-    Vale-compras, convênio farmácia, Adicional Noturno, Hora-extra — essa
-    última sem dados reais para validar), e a decisão operacional de
-    quem/como corrige nomes não encontrados quando o gate fica BLOCKED.
-11. **Liberar exportação de produção** — não liberado nesta fase. Falta:
-    itens 5 e 7 acima, testes end-to-end completos, e decisão explícita
-    de homologação (ver `.claude/skills/homologar-automacao/SKILL.md`).
+    Matriz+Filial→validação→relatório).
+11. ~~Extração real das abas de benefício~~ — **IMPLEMENTADA E VALIDADA**
+    para Vale-refeição, Vale-compras, Convênio Farmácia, Adicional
+    Noturno (Filial) e Cesta Básica (Matriz+Filial). Hora-extra
+    implementada estruturalmente, sem dados reais para validar.
+12. **Vale-transporte** — PENDENTE. Zero registros reais de funcionário
+    nos arquivos disponíveis (só tabela de totalizadores); coluna de
+    valor do evento 815 não confirmada.
+13. **Eventos da Matriz sem código confirmado** (Vale-refeição,
+    Vale-compras, Convênio Farmácia, Adicional Noturno) — PENDENTE.
+    Dados reais existem na Matriz, mas nenhum código de evento foi
+    confirmado para essas abas nessa unidade; não foi assumido que os
+    códigos da Filial se aplicam.
+14. **Decisão operacional de correção** — quem/como corrige nomes não
+    encontrados quando o gate fica BLOCKED (ex.: os 43 da VR Filial, os
+    13 da Cesta Matriz+Filial) — ainda não definido.
+15. **Liberar exportação de produção** — não liberado nesta fase. Falta:
+    itens 5, 7, 12 e 13 acima, testes end-to-end completos, e decisão
+    explícita de homologação (ver
+    `.claude/skills/homologar-automacao/SKILL.md`).
 
 Ver `.claude/skills/gerar-questor/SKILL.md` para o procedimento completo e
 `docs/BACKLOG.md` para o próximo passo.

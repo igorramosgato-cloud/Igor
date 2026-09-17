@@ -19,3 +19,15 @@ de metadados OOXML e do `vbaProject.bin` dos `.xlsm` reais não revelou
 isso — só a macro `GerarLayoutImportacao`). Ver
 `docs/BACKLOG.md` → "Próximo passo imediato" e
 `.claude/skills/gerar-questor/SKILL.md`.
+
+**Achados adicionais (2026-09-17) sobre os `.xlsm` já registrados**, da
+extração real das demais abas — não são novas fontes, mas reforçam a
+análise das duas já listadas acima: (1) a aba `Vale-refeicao` da Filial
+tem um bloco de 762 linhas com `#REF!` (fórmula quebrada) numa coluna não
+usada pelos dados reais de funcionário — não afeta a extração, que só lê
+as colunas de código/nome/valor; (2) a Matriz tem dados reais nas abas
+Vale-refeição, Vale-compras, Convênio Farmácia e Adicional Noturno, mas
+nenhum código de evento confirmado para elas nessa unidade (ver
+`docs/DECISIONS.md`); (3) `Vale-transporte`, em ambos os arquivos, só tem
+uma tabela de totalizadores por centro de custo/departamento — zero
+registros reais de funcionário.

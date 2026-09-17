@@ -14,8 +14,13 @@
       "gate_cesta_matriz": "CONFIRMADO (2026-09-17) — código 1524, natureza desconto",
       "gate_identidade_filial": "ESCLARECIDO E IMPLEMENTADO (2026-09-17) — construir_lancamentos_cesta_basica combina Matriz+Filial em um conjunto por evento",
       "gate_decimais": "IMPLEMENTADO (2026-09-17) — src/jrdp/decimais.py usa Decimal, nunca float direto; 16 testes incluindo contra-exemplo Decimal(19.1)",
-      "gate_camada_canonica": "CONSTRUÍDA E TESTADA (2026-09-17) — canonico.py, pipeline.py, conferencia.py, exportadores.py; 122/122 testes passando; nenhum exportador ligado à produção",
-      "motivo_bloqueio": "Dois itens dependem só do usuário: (1) fornecer um arquivo .csv real tipo H para certificação binária; (2) informar a versão do Questor/importador, se souber. Depois disso: implementar a extração real das demais abas de benefício (Vale-refeição, Vale-compras, convênio farmácia, Adicional Noturno, Hora-extra), decidir o fluxo operacional de correção quando o gate fica BLOCKED, e só então liberar exportação de produção (testes end-to-end + homologação formal).",
+      "gate_camada_canonica": "CONSTRUÍDA E TESTADA (2026-09-17) — canonico.py, pipeline.py, conferencia.py, exportadores.py",
+      "gate_extracao_real": "IMPLEMENTADA E VALIDADA (2026-09-17) — src/jrdp/extratores/ (valor_simples, cesta_basica); validado contra dados reais: VR Filial 233/190/43, Compras Filial 21/16/5, Farmácia Filial 7/5/2, Adicional Noturno Filial 44/33/11, Cesta Matriz+Filial 317/304/13 (total/encontrados/não encontrados), todos BLOCKED pela política fail-closed",
+      "gate_horas_minutos": "IMPLEMENTADO (2026-09-17) — src/jrdp/minutos.py; H,MM nunca somado como decimal (01:52+00:32=144min/02:24, nunca 1,84); teste permanente",
+      "gate_hora_extra_extrator": "ESTRUTURAL, NÃO VALIDADO (2026-09-17) — src/jrdp/extratores/horas.py implementado mas sem dados reais na aba Hora-extra para validar",
+      "gate_vale_transporte": "PENDENTE (2026-09-17) — zero registros reais de funcionário nos arquivos (só tabela de totalizadores); coluna de valor do evento 815 não confirmada; extrator propositalmente não funcional",
+      "gate_eventos_matriz_sem_codigo": "PENDENTE (2026-09-17) — Matriz tem dados reais de Vale-refeição/Vale-compras/Convênio Farmácia/Adicional Noturno mas nenhum código de evento confirmado para essas abas nessa unidade; não presumido igual à Filial",
+      "motivo_bloqueio": "Três decisões dependem do usuário: (1) códigos de evento da Matriz para Vale-refeição/Vale-compras/Convênio Farmácia/Adicional Noturno; (2) fluxo operacional para corrigir nomes não encontrados (ex.: 43 da VR Filial, 13 da Cesta); (3) arquivo .csv real tipo H e/ou versão do Questor. Depois disso: testes end-to-end e homologação formal antes de liberar exportação de produção.",
       "referencia": "docs/P01_ART_LATEX_QUESTOR.md"
     },
     {

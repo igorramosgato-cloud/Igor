@@ -3,6 +3,94 @@
 Entradas mais recentes no topo. Formato definido em
 `.claude/skills/registrar-decisao/SKILL.md`.
 
+## 2026-09-17 — Extração real das demais abas; H,MM nunca é unidade aritmética; novo PENDENTE (eventos Matriz sem código)
+
+**Contexto:** avançar a extração real das fontes ART LATEX (sem esperar o
+CSV tipo H), construindo sobre a camada canônica já existente, sem
+liberar produção.
+
+**1) Conflito identificado e resolvido a favor da evidência física.** A
+instrução recebida pedia "Matriz: utilizar o valor da coluna E
+'Desconto'" para a Cesta Básica. Isso **contradiz** a entrada de decisão
+de 2026-09-17 (mais abaixo), que já havia comprovado por evidência física
+que a coluna E real é `CR`, não `Desconto`, e que a aba não tem nenhuma
+coluna de valor. **Não segui a instrução textual** — implementei a regra
+já confirmada (contagem de colaboradores listados, R$1,00 cada, igual à
+Filial) e registro aqui a divergência, em vez de sobrescrever
+silenciosamente.
+
+**2) H,MM nunca é unidade aritmética — proteção permanente.** Somar
+`"1,52" + "0,32"` como decimal daria `1,84`, que não corresponde a
+nenhuma duração real (01:52 + 00:32 = 144 minutos = 02:24). Implementado
+`src/jrdp/minutos.py` (`hhmm_para_minutos`, `minutos_para_hhmm`,
+`somar_horas_em_minutos`) e usado em `conferencia.gerar_relatorio_evento`
+para totalizar horas sempre via minutos, nunca via string serializada.
+Teste permanente em `tests/test_minutos.py` prova explicitamente que a
+soma decimal ingênua (`1,84`) diverge do resultado correto (`144`
+minutos / `02:24`).
+
+**3) Extratores reais implementados** (`src/jrdp/extratores/`):
+- `valor_simples.py` — padrão `COD.FUNC/NOME/VALOR`, usado em
+  Vale-refeição, Vale-compras, Convênio Farmácia, Adicional Noturno.
+- `cesta_basica.py` — só nomes (valor é regra de negócio, não coluna).
+- `horas.py` — Hora-extra (HE 50%/100%), **estrutural, não validado
+  contra dados reais** (a aba segue com 0 registros reais nos dois
+  arquivos). Suporte a `datetime.time`, string `HH:MM` e fração de dia
+  (float) é hipótese razoável, não certificação.
+- `vale_transporte.py` — **propositalmente não funcional**. Achado:
+  ambos os arquivos têm só uma tabela de totalizadores por centro de
+  custo/departamento nas colunas O/P — **zero registros reais de
+  funcionário**. Também não há confirmação de qual coluna (`TOTAL`,
+  `DESCONTO`, `ACRÉSCIMO`, `VALOR DA CARGA`) alimenta o evento 815. Fica
+  `PENDENTE`.
+
+**4) Achado novo: eventos da Matriz sem código confirmado.** A Matriz
+real tem abas com dados reais de Vale-refeição (233 registros, após
+filtrar artefato — ver item 5), Vale-compras, Convênio Farmácia e
+Adicional Noturno — mas `config/clientes/art_latex.json` só cataloga os
+eventos 50 e 1524 para a Matriz. **Não assumi que os códigos da Filial
+(1955, 813, 806, 96) valem também para a Matriz** — isso ficaria
+inventando uma regra de negócio não confirmada. Extração estrutural
+funciona; construção de lançamento canônico para esses eventos na Matriz
+fica corretamente marcada `invalido` (evento não cadastrado), não como
+erro de dado.
+
+**5) Achado de qualidade de dado (não é bug do extrator).** A aba
+`Vale-refeicao` da Filial tem, a partir da linha ~239, um bloco de 762
+linhas com valor `#REF!` (referência de fórmula quebrada) numa coluna
+não usada (H), sem relação com os registros reais de funcionário
+(colunas A-C). O extrator já ignora isso corretamente por não olhar essa
+coluna — mas fica registrado como peculiaridade estrutural da planilha
+real.
+
+**Validação real agregada** (só em memória, nenhum dado individual
+persistido):
+
+| Evento | Unidade(s) | Total | Encontrados | Não enc. | Ambíguos | Status |
+|---|---|---|---|---|---|---|
+| 1955 VR | Filial | 233 | 190 | 43 | 0 | BLOCKED |
+| 813 Compras | Filial | 21 | 16 | 5 | 0 | BLOCKED |
+| 806 Farmácia | Filial | 7 | 5 | 2 | 0 | BLOCKED |
+| 96 Ad. Noturno | Filial | 44 | 33 | 11 | 0 | BLOCKED |
+| 1524 Cesta | Matriz+Filial | 317 (117+200) | 304 | 13 | 0 | BLOCKED |
+
+Todos `BLOCKED` pela política fail-closed já adotada — nenhum tem 0 não
+encontrados. Nenhum nome, CPF ou valor individual foi reproduzido; as
+somas financeiras agregadas por evento (não identificam ninguém) foram
+conferidas apenas em memória.
+
+**Evidência:** execução real dos extratores contra os arquivos já em
+`homologacao/art_latex/questor/origem/` e o cadastro real.
+**Impacto:** `src/jrdp/minutos.py`,
+`src/jrdp/extratores/{valor_simples,cesta_basica,horas,vale_transporte}.py`
+(novos), `src/jrdp/conferencia.py` (duplicidades, total_horas_minutos,
+reconciliar_total_fonte), `tests/test_minutos.py`,
+`tests/test_extratores.py`, `tests/test_conferencia.py` (novos). Nenhuma
+mudança em `config/clientes/art_latex.json` (o achado do item 4 não gerou
+alteração de config — só ficou registrado como PENDENTE). Nenhum
+exportador foi ligado à produção; `QuestorExporterH` continua bloqueando
+incondicionalmente.
+
 ## 2026-09-17 — Correção: Decimal, não float; e camada canônica do pipeline (sem liberar produção)
 
 **Contexto:** revisão crítica da entrada anterior (logo abaixo). O
