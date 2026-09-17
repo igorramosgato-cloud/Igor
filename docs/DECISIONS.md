@@ -3,7 +3,42 @@
 Entradas mais recentes no topo. Formato definido em
 `.claude/skills/registrar-decisao/SKILL.md`.
 
+## 2026-09-17 — Chave de matching resolvida: "Contrato" == "COD. FUNC. QUESTOR"
+
+**Contexto:** a entrada anterior (mesma data, logo abaixo) registrava a
+ausência de código de funcionário nas planilhas reais Matriz/Filial como
+bloqueio de matching. O usuário forneceu um relatório real ("Base de
+ativos") extraído do sistema de origem, com colunas Contrato, Nome,
+Admissão, Descrição (cargo) e CPF — 495 registros, `Contrato` e `CPF`
+únicos e sem duplicata.
+**Decisão:** perguntado explicitamente, o usuário **confirmou** que o
+campo `Contrato` desse relatório é o mesmo código usado como `COD. FUNC.
+QUESTOR` nas planilhas Matriz/Filial. Isso é uma confirmação do cliente
+sobre um processo de negócio (não uma evidência física autoexplicativa,
+já que a aba `Configuracoes` das planilhas Matriz/Filial estava vazia e
+não permitia cruzar isso sozinha) — registrado como tal, no mesmo nível de
+confiança de outras confirmações do cliente (ex.: formato H,MM). Isso
+**desbloqueia** o uso de `Contrato`/CPF como chave de matching nome→código
+via este cadastro, resolvendo o conflito com `.claude/rules/matching.md`.
+**Evidência:** arquivo `.csv` real ("Base de ativos"), SHA-256
+`74c35532b88350be10a7a7a8e121230bfa1aa44beb5c5a41632b9cf5032653c3`, 47156
+bytes, mais a confirmação explícita do usuário em 2026-09-17. Nenhum nome,
+CPF ou contrato real foi reproduzido em qualquer arquivo do repositório.
+**Impacto:** novo módulo `src/jrdp/cadastro_ativos.py` (parser do relatório
+paginado, com validação de contagem contra o próprio rodapé do arquivo, e
+funções de indexação por contrato/CPF), `tests/test_cadastro_ativos.py`
+(11 testes, fixture 100% sanitizada). Validado também em memória contra o
+arquivo real (495/495 registros, contagem batendo com o rodapé). Ainda não
+implementado: o cruzamento efetivo nome/CPF → contrato dentro do fluxo
+origem (Matriz/Filial) → Questor — isso fica para quando o mapeamento for
+implementado (outras pendências do P01 continuam abertas, ver
+`docs/P01_ART_LATEX_QUESTOR.md`).
+
 ## 2026-09-17 — Chave de matching ausente nas planilhas reais ART LATEX (BLOCKED)
+
+> **Bloqueio resolvido pela entrada acima** (mesma data). Mantida aqui por
+> rastreabilidade de como o problema foi identificado antes de ser
+> resolvido.
 
 **Contexto:** inventário estrutural das planilhas reais de origem (Matriz e
 Filial, `.xlsm`) para o P01, próximo passo após o gate de layout do

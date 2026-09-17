@@ -18,3 +18,10 @@ competência, status) e o contexto em `../evidencia/README.md`.
   duas divergências registradas em `docs/DECISIONS.md`. Contêm dados
   pessoais reais, incluindo CPF na aba "Plano de saúde" da Filial —
   nunca abrir/copiar esses arquivos para fora desta pasta local.
+- **2026-09-17**: `base_ativos_art_latex.csv` (relatório real de cadastro,
+  extraído do sistema de origem do usuário). **Resolveu** o bloqueio de
+  matching acima: tem `Contrato` (código), `Nome`, `Admissão`,
+  `Descrição` (cargo) e `CPF`, 495 registros, confirmado pelo usuário como
+  usando o mesmo código de `COD. FUNC. QUESTOR`. Ver
+  `src/jrdp/cadastro_ativos.py` e `docs/DECISIONS.md`. Contém CPF real —
+  nunca abrir/copiar para fora desta pasta local.

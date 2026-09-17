@@ -1,6 +1,6 @@
 # P01 — Variáveis + Benefícios ART LATEX → Questor
 
-## Status: BLOCKED para geração de produção (gate de layout: PASS)
+## Status: BLOCKED para geração de produção (gate de layout: PASS; matching: RESOLVIDO)
 
 Regras de negócio já parametrizadas (`config/clientes/art_latex.json`,
 `.claude/rules/art-latex.md`) e cobertas por testes (`tests/test_art_latex.py`,
@@ -121,26 +121,29 @@ originais ficam só localmente em
   a coluna "Ações" em cada aba sugere que um botão de macro processa os
   dados; a lógica de geração pode estar na macro, não só na planilha.
 
-### CONFLITO CRÍTICO — chave de matching ausente (BLOQUEIA o próximo passo)
+### CHAVE DE MATCHING — bloqueio identificado e depois RESOLVIDO (2026-09-17)
 
 - A coluna `COD. FUNC.` existe no cabeçalho de **toda** aba com dado, mas
-  está **vazia em 100% dos registros reais**, em **ambos** os arquivos
+  estava **vazia em 100% dos registros reais**, em **ambos** os arquivos
   (Matriz e Filial), em todas as abas com dados. A única identificação
-  presente na prática é o **nome livre** (`NOME DO EMPREGADO`).
-- Isso viola diretamente `.claude/rules/matching.md` ("nunca nome livre").
-  Por essa regra, a tarefa de mapeamento origem → Questor fica
-  **BLOCKED** até existir uma chave confiável — não vou implementar
-  matching por nome, mesmo que pareça "dar certo" na maioria dos casos.
-- **Hipóteses não confirmadas** (preciso de confirmação do usuário, não
-  vou assumir nenhuma):
-  1. Existe um cadastro mestre separado (fora destes dois arquivos) que
-     preenche `Configuracoes` com código+nome antes da geração?
-  2. A macro VBA embutida faz o de-para nome→código consultando outra
-     fonte (ex.: exportação do Questor) no momento da geração?
-  3. O preenchimento do código é manual, feito pela equipe de DP depois
-     de exportar/antes de gerar o arquivo final?
-- Enquanto isso não for esclarecido, nenhum código de mapeamento
-  origem→Questor será implementado.
+  presente na prática era o **nome livre** (`NOME DO EMPREGADO`), o que
+  violaria `.claude/rules/matching.md`.
+- **Resolvido**: o usuário forneceu um relatório real de cadastro ("Base
+  de ativos", extraído do sistema de origem) com colunas `Contrato`
+  (código), `Nome`, `Admissão`, `Descrição` (cargo) e `CPF` — 495
+  registros, `Contrato` e `CPF` ambos únicos e sem duplicata — e
+  **confirmou explicitamente** que `Contrato` é o mesmo código usado como
+  `COD. FUNC. QUESTOR`. Ver `docs/DECISIONS.md` (2026-09-17).
+- Implementado em `src/jrdp/cadastro_ativos.py` (parser do relatório
+  paginado, valida a contagem extraída contra o rodapé do próprio
+  arquivo), testado em `tests/test_cadastro_ativos.py` com fixture 100%
+  sanitizada, e validado em memória contra o arquivo real (495/495
+  registros). Isso dá as funções `indexar_por_contrato` e
+  `indexar_por_cpf` para resolver nome/CPF → código de forma confiável.
+- **Ainda não implementado**: o cruzamento efetivo desse índice contra os
+  registros das planilhas Matriz/Filial (que só têm nome) dentro de um
+  pipeline origem → Questor. Isso é o próximo passo depois que as demais
+  pendências abaixo forem resolvidas.
 
 ### CONFLITO REGISTRADO — coluna da Cesta Básica da Matriz
 
@@ -177,11 +180,10 @@ originais ficam só localmente em
 1. ~~Layout físico/binário do importador do Questor~~ — **CONFIRMADO**
    (gate PASS). Resta confirmar o comportamento para eventos tipo `H`.
 2. ~~Planilhas-fonte reais Matriz/Filial da ART LATEX~~ — **recebidas e
-   inventariadas**, mas revelaram um bloqueio novo (ver "Conflito
-   crítico" acima).
-3. **Chave de matching confiável** (código de funcionário) — **ausente**
-   nos dados reais recebidos. Bloqueia qualquer mapeamento origem→Questor
-   até esclarecido.
+   inventariadas**.
+3. ~~Chave de matching confiável~~ — **RESOLVIDA**: `Contrato` do cadastro
+   real == `COD. FUNC. QUESTOR`, confirmado pelo usuário. Falta apenas
+   implementar o cruzamento dentro do pipeline origem→Questor.
 4. Código do evento da Cesta Básica da Matriz.
 5. Versão específica do Questor/layout do conversor.
 6. Decisão explícita sobre a precisão decimal do valor ao implementar o

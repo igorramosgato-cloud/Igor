@@ -42,6 +42,19 @@
       "analisado_em": "2026-09-17",
       "recebido_em": "2026-09-17",
       "versao_layout_identificada": "arquivo .xlsm macro-habilitado (xl/vbaProject.bin), mesma estrutura de abas do arquivo Matriz, mais aba extra vazia Plan1"
+    },
+    {
+      "arquivo_logico": "base_ativos_art_latex.csv",
+      "pasta": "origem",
+      "sha256": "74c35532b88350be10a7a7a8e121230bfa1aa44beb5c5a41632b9cf5032653c3",
+      "tamanho_bytes": 47156,
+      "cliente_origem_do_arquivo": "ART LATEX (relatório 'Base de ativos', extraído do sistema de origem do cliente)",
+      "status": "CONFIRMADO_POR_EVIDENCIA_FISICA_E_CONFIRMACAO_DO_CLIENTE",
+      "finalidade": "Resolve o bloqueio de matching: cadastro código (Contrato) + Nome + CPF + Admissão + Descrição (cargo), 495 registros, Contrato e CPF únicos. Usuário confirmou explicitamente que Contrato == COD. FUNC. QUESTOR usado nas planilhas Matriz/Filial.",
+      "observacao": "Relatório paginado (Latin-1, ';', CRLF, aspas em Nome/Descrição), 9 blocos de quebra de página com cabeçalho de colunas repetido. Parser em src/jrdp/cadastro_ativos.py valida a contagem extraída contra o total declarado no próprio rodapé do arquivo (495/495 confirmado). Nenhum nome, CPF ou contrato real foi extraído para este manifest ou qualquer outro arquivo versionado.",
+      "analisado_em": "2026-09-17",
+      "recebido_em": "2026-09-17",
+      "versao_layout_identificada": "relatório de cadastro paginado, colunas: Contrato;Nome;Admissão;Descrição;CPF"
     }
   ]
 }
