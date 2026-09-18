@@ -100,31 +100,41 @@ Noturna) também vale para as duas unidades — adicionado à Filial em
 novos de 96/1955 são reais, não erro de leitura, e seguem para o
 mesmo fluxo de identidade já usado nas 60 pessoas anteriores.
 
-**Planilha de revisão de identidade para 96/1955 gerada e revisada
-tecnicamente (2026-09-18)**: 22 pessoas únicas (deduplicadas entre os
-dois eventos — 14 aparecem em 96, 11 em 1955, com sobreposição), todas
-unidade `matriz`. Classificação técnica por evidência de
-nome/cadastro (comparação estrutural de tokens, não só score bruto de
-similaridade): **5 `CONFIRMADO_POR_EVIDENCIA`, 15 `INCONCLUSIVO`, 2
-`REJEITADO`** — nos 2 rejeitados o código/nome sugerido foi removido da
-planilha para não induzir aprovação de um candidato provavelmente
-errado.
+**Segunda rodada documental para 96/1955 concluída (2026-09-18)**: a
+primeira rodada (limitada ao cadastro já usado no match exato, feita
+por esta sessão) foi substituída por uma revisão do usuário com fontes
+reais adicionais — Base Questor.pdf (Relação de Empregados), Gate
+mensal auditado (`JRPA_GATE_100_JAN_AGO_2026_v6/v7`), Levantamento de
+Admissões Operacionais, Relação de Eventos 08/2026, Folha
+Totalizadora/Recibos 08/2026 (Matriz e Filial), e a auditoria
+De-Para Questor×Sankhya. Ordem de evidência aplicada: cadastro/Questor
+→ recibo/folha da competência → base mensal auditada → admissões →
+comparação nominal → fuzzy só como pista.
 
-**Limitação registrada explicitamente**: esta sessão não tem acesso a
-"recibos de competência", "Relação de Empregados" ou "admissões" como
-arquivos separados — diferente da revisão externa que resolveu as 60
-pessoas anteriores. A classificação técnica desta rodada usa só o
-cadastro real já usado no match exato
-(`base_ativos_art_latex.csv`). Isso está escrito na coluna
-`Observação` de cada linha e no JSON de apoio
-(`revisao_tecnica_96_1955.json`).
+Resultado das 22 pessoas: **11 `CONFIRMADO_POR_EVIDENCIA_DIRETA`, 10
+`CONFIRMADO_POR_EVIDENCIA_CRUZADA`, 1 `REJEITADO`, 0
+`INCONCLUSIVO`**. O rejeitado era um falso positivo real (candidato
+apontava para pessoa diferente, com CPF divergente no de-para já
+homologado) — código/nome removidos da planilha, exige busca manual de
+outra identidade. Um conflito histórico de nome em 1 matrícula foi
+documentado (saídas antigas com um nome, fontes atuais certificadas
+convergindo em outro) e resolvido dando prevalência às fontes mais
+recentes/certificadas. Verificação estrutural: 0 códigos duplicados
+entre as 22 pessoas, 0 confirmados sem código/nome preenchido,
+`Decisão analista`/`Aprovado por`/`Data aprovação` seguem **22/22
+vazios** — nada foi homologado, apenas classificado tecnicamente.
+
+Por evento: **1955** = 11/11 pessoas com identidade tecnicamente
+resolvida (6 direta + 5 cruzada) — pode chegar a `PASS` de identidade
+assim que homologado. **96** = 13/14 resolvidas (8 direta + 5 cruzada)
++ 1 rejeitada — ficará com 1 pendência mesmo após homologação, até
+localizar o cadastro correto desse caso.
 
 Planilha real em
 `homologacao/art_latex/questor/depara/revisao_depara_nomes_96_1955.xlsx`
-(fora do Git). **`Decisão analista`/`Aprovado por`/`Data aprovação`
-continuam 22/22 vazios** — nenhuma homologação automática, trabalho do
-analista de DP segue o mesmo fluxo já usado para as 60 pessoas
-anteriores.
+(fora do Git) — classificação na coluna `Confiança diagnóstica`,
+justificativa e fontes na `Observação`, aba `Resumo evidências` com o
+consolidado.
 
 ## Próximo passo
 
