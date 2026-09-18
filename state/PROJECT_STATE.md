@@ -154,14 +154,28 @@ Planilha real em
 justificativa e fontes na `Observação`, aba `Resumo evidências` com o
 consolidado.
 
+**Último gate antes de HOMOLOGADO (2026-09-18)**: preparado o checklist
+`docs/P01_CHECKLIST_IMPORTACAO_MANUAL_V.md`, com o SHA-256 de cada um
+dos 4 candidatos e os valores esperados (registros/total) já travados
+pela reconciliação certificada — para que quem for importar no Questor
+confirme que está usando o arquivo certo e saiba exatamente o que
+esperar. **Esta automação não tem acesso ao Questor real**: a
+importação manual em ambiente de homologação e a conferência na tela
+(evento correto, quantidade, valores, Matriz/Filial, duplicidade,
+colaborador omitido, total agregado) são etapas exclusivamente
+humanas. Nenhum resultado foi simulado ou assumido.
+
 ## Próximo passo
 
-1. Decidir com o usuário quando submeter manualmente os 4 candidatos já
-   elegíveis (806, 813, 1524, 1955) para o teste real de importação no
-   Questor (fora desta automação) — só depois de um sucesso confirmado
-   manualmente é que entram em consideração para qualquer automação de
-   produção.
-2. Evento 96 fica com 1 pendência de identidade em aberto — só avança
+1. Um responsável com acesso ao Questor executa o checklist
+   `docs/P01_CHECKLIST_IMPORTACAO_MANUAL_V.md`, na ordem 806 → 813 →
+   1524 → 1955, em ambiente de homologação, e devolve os números
+   preenchidos.
+2. Só a partir desse resultado real eu registro `HOMOLOGADO` por
+   evento em `docs/DECISIONS.md`, atualizo o status e considero
+   integração ao `GERAR_PARA_O_QUESTOR.bat`/uso operacional — nunca
+   antes disso.
+3. Evento 96 fica com 1 pendência de identidade em aberto — só avança
    se surgir nova evidência real para essa pessoa específica; não deve
    ser forçado com um código adivinhado.
 
