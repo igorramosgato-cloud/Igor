@@ -100,14 +100,31 @@ Noturna) também vale para as duas unidades — adicionado à Filial em
 novos de 96/1955 são reais, não erro de leitura, e seguem para o
 mesmo fluxo de identidade já usado nas 60 pessoas anteriores.
 
-**Planilha de revisão de identidade para 96/1955 gerada
-(2026-09-18)**: 22 pessoas únicas (deduplicadas entre os dois eventos
-— 14 aparecem em 96, 11 em 1955, com sobreposição), todas unidade
-`matriz`, todas com sugestão fuzzy diagnóstica (nenhuma sem
-candidato). Planilha real em
+**Planilha de revisão de identidade para 96/1955 gerada e revisada
+tecnicamente (2026-09-18)**: 22 pessoas únicas (deduplicadas entre os
+dois eventos — 14 aparecem em 96, 11 em 1955, com sobreposição), todas
+unidade `matriz`. Classificação técnica por evidência de
+nome/cadastro (comparação estrutural de tokens, não só score bruto de
+similaridade): **5 `CONFIRMADO_POR_EVIDENCIA`, 15 `INCONCLUSIVO`, 2
+`REJEITADO`** — nos 2 rejeitados o código/nome sugerido foi removido da
+planilha para não induzir aprovação de um candidato provavelmente
+errado.
+
+**Limitação registrada explicitamente**: esta sessão não tem acesso a
+"recibos de competência", "Relação de Empregados" ou "admissões" como
+arquivos separados — diferente da revisão externa que resolveu as 60
+pessoas anteriores. A classificação técnica desta rodada usa só o
+cadastro real já usado no match exato
+(`base_ativos_art_latex.csv`). Isso está escrito na coluna
+`Observação` de cada linha e no JSON de apoio
+(`revisao_tecnica_96_1955.json`).
+
+Planilha real em
 `homologacao/art_latex/questor/depara/revisao_depara_nomes_96_1955.xlsx`
-(fora do Git). **Nenhuma decisão preenchida** — trabalho do analista de
-DP, mesmo fluxo já usado para as 60 pessoas anteriores.
+(fora do Git). **`Decisão analista`/`Aprovado por`/`Data aprovação`
+continuam 22/22 vazios** — nenhuma homologação automática, trabalho do
+analista de DP segue o mesmo fluxo já usado para as 60 pessoas
+anteriores.
 
 ## Próximo passo
 
