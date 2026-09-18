@@ -13,6 +13,7 @@ Este arquivo é a documentação legível da mesma configuração.
 | 23     | Falta                | Hora  |
 | 29     | Atraso               | Hora  |
 | 25     | DSR                  | Hora  |
+| 50     | HE 100% Noturna      | Hora  |
 | 1955   | VR                   | Valor |
 | 815    | VT                   | Valor |
 | 1524   | Cesta (R$ 1,00/colaborador listado) | Valor |
@@ -30,6 +31,11 @@ Este arquivo é a documentação legível da mesma configuração.
 | 813    | Compras                | Valor |
 | 806    | Farmácia               | Valor |
 | 96     | Adicional Noturno      | Valor |
+
+O código 50 (HE 100% Noturna) foi confirmado pelo usuário em
+2026-09-18 como o mesmo código nas duas unidades (antes só constava na
+Matriz) — continua sujeito ao bloqueio geral de eventos tipo Hora
+(`QuestorExporterH`), sem relação com esta confirmação.
 
 Os códigos 1955 (VR), 813 (Compras), 806 (Farmácia) e 96 (Adicional
 Noturno) da Matriz foram confirmados pelo usuário em 2026-09-18 como os

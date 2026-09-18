@@ -3,6 +3,43 @@
 Entradas mais recentes no topo. Formato definido em
 `.claude/skills/registrar-decisao/SKILL.md`.
 
+## 2026-09-18 — Confirmação final: códigos 96/806/813/1955/1524/50 valem para Matriz E Filial; config mantida
+
+**Contexto:** após o reprocessamento anterior (Matriz+Filial nos 5
+eventos de valor + NOT_FOUND novos em 96/1955), havia risco de
+interpretar isso como um possível erro de leitura da confirmação
+anterior e reverter `config/clientes/art_latex.json`.
+
+**Decisão:** o usuário confirmou de forma direta, explícita e final
+que:
+- 96 (Adicional Noturno), 806 (Farmácia), 813 (Compras), 1955 (VR) e
+  1524 (Cesta Básica) são os mesmos códigos em Matriz e Filial — a
+  config atual está correta, **não deve ser revertida**.
+- 50 (HE 100% Noturna) também vale para Matriz **e** Filial — antes só
+  estava registrado na Matriz.
+- Os `NOT_FOUND` novos encontrados na Matriz para 96 e 1955 são reais
+  (pessoas de fato não resolvidas pelo match exato nem pelo de-para já
+  homologado) e devem seguir o mesmo fluxo de identidade já usado para
+  as 60 pessoas anteriores — não é motivo para desfazer a config.
+- Os candidatos V já gerados para 806, 813 e 1524 continuam válidos.
+
+**Impacto:** `config/clientes/art_latex.json` — evento 50 (HE 100%
+Noturna) adicionado também à unidade `filial` (continua tipo `hora`,
+sujeito ao bloqueio geral de `QuestorExporterH`, sem relação com esta
+confirmação). Nenhuma outra mudança de config — os eventos
+96/806/813/1955/1524 de Matriz+Filial já registrados na decisão
+anterior (mesma data) permanecem exatamente como estavam.
+`.claude/rules/art-latex.md` atualizado com o código 50 na tabela da
+Filial.
+
+Próximo trabalho: nova rodada de revisão de identidade (mesmo fluxo
+`revisao_depara.py`) só para os `NOT_FOUND` novos da Matriz de 96 e
+1955, sem duplicar pessoas que apareçam nos dois eventos.
+
+**Evidência:** confirmação textual direta e explícita do usuário nesta
+conversa em 2026-09-18, respondendo ao relatório do reprocessamento
+anterior.
+
 ## 2026-09-18 — Homologação formal dos eventos V + geração de candidatos (taxonomia IDENTIDADE/EXPORTAÇÃO V/PRODUÇÃO)
 
 **Contexto:** execução do gate "homologação formal dos eventos V +

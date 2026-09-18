@@ -91,12 +91,34 @@ Detalhes completos em `docs/DECISIONS.md` (entradas de 2026-09-17 e
 2026-09-18). Nenhum dado pessoal foi reproduzido em qualquer lugar
 versionado.
 
+**Confirmação final do usuário (2026-09-18)**: os códigos 96, 806,
+813, 1955, 1524 são os mesmos em Matriz e Filial — confirmado de forma
+direta e explícita, config **não revertida**. O código 50 (HE 100%
+Noturna) também vale para as duas unidades — adicionado à Filial em
+`config/clientes/art_latex.json` (continua tipo hora, bloqueado por
+`QuestorExporterH`, sem relação com esta confirmação). Os `NOT_FOUND`
+novos de 96/1955 são reais, não erro de leitura, e seguem para o
+mesmo fluxo de identidade já usado nas 60 pessoas anteriores.
+
+**Planilha de revisão de identidade para 96/1955 gerada
+(2026-09-18)**: 22 pessoas únicas (deduplicadas entre os dois eventos
+— 14 aparecem em 96, 11 em 1955, com sobreposição), todas unidade
+`matriz`, todas com sugestão fuzzy diagnóstica (nenhuma sem
+candidato). Planilha real em
+`homologacao/art_latex/questor/depara/revisao_depara_nomes_96_1955.xlsx`
+(fora do Git). **Nenhuma decisão preenchida** — trabalho do analista de
+DP, mesmo fluxo já usado para as 60 pessoas anteriores.
+
 ## Próximo passo
 
 Duas frentes independentes:
-1. **96 e 1955**: rodar uma nova revisão de identidade (mesmo fluxo
-   `revisao_depara.py`) só para as pessoas NOT_FOUND novas trazidas
-   pela Matriz, e homologar como já foi feito para as 60 anteriores.
+1. **96 e 1955**: analista de DP revisa
+   `revisao_depara_nomes_96_1955.xlsx` (22 pessoas), homologa
+   (`APROVAR` + responsável + data). Depois:
+   `revisao_depara.importar_decisoes_aprovadas` →
+   `depara.mesclar_depara`/`salvar_depara` → reexecutar 96 e 1955 → se
+   100% resolvidos, gerar candidatos V e submeter ao mesmo gate de
+   reconciliação já aplicado a 806/813/1524.
 2. **806, 813, 1524**: decidir com o usuário quando submeter
    manualmente os 3 candidatos já elegíveis para o teste real de
    importação no Questor (fora desta automação) — só depois de um

@@ -8,6 +8,12 @@
         {"codigo": 23, "descricao": "Falta", "tipo": "hora"},
         {"codigo": 29, "descricao": "Atraso", "tipo": "hora"},
         {"codigo": 25, "descricao": "DSR", "tipo": "hora"},
+        {
+          "codigo": 50,
+          "descricao": "HE 100% Noturna",
+          "tipo": "hora",
+          "observacao": "Código confirmado pelo usuário em 2026-09-18 como o mesmo código do evento equivalente na Matriz. Continua sujeito ao bloqueio geral de eventos tipo Hora (QuestorExporterH), sem relação com esta confirmação."
+        },
         {"codigo": 1955, "descricao": "VR", "tipo": "valor"},
         {"codigo": 815, "descricao": "VT", "tipo": "valor"},
         {
