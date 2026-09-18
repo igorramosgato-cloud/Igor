@@ -40,44 +40,72 @@ divergência não bloqueia a identidade desses 2 casos — decisão
 registrada em `docs/DECISIONS.md` (2026-09-18). Isso não homologa
 nenhuma correspondência; nenhuma importação de de-para foi feita.
 
-**Identidade homologada e 5 eventos reexecutados, todos PASS
-(2026-09-18)**: a planilha `revisao_depara_nomes_HOMOLOGADA.xlsx` voltou
-com as 60 linhas em `APROVAR` (literal), `Aprovado por="Igor"`,
-`Data aprovação="2026-09-17"`, todas completas. Sequência executada:
-`revisao_depara.importar_decisoes_aprovadas` → `depara.mesclar_depara`/
-`salvar_depara` (`depara_nomes.json` local, fora do Git, confirmado via
-`git check-ignore`) → reexecução dos 5 eventos do pacote contra os
-arquivos reais. Resultado: **96, 806, 813, 1524, 1955 todos em `PASS`**
-(0 NOT_FOUND, 0 AMBIGUOUS, 0 inválidos cada); manifesto **TOTALMENTE
-LIBERADO**. Consolidado: 412 pessoas únicas, 352 por match exato, 60
-por de-para homologado, 0 pendentes, 0 ambíguas. Detalhe completo em
-`docs/DECISIONS.md` (2026-09-18).
+**Identidade homologada (60 pessoas) e códigos de evento da Matriz
+confirmados (2026-09-18)**: a planilha `revisao_depara_nomes_HOMOLOGADA.xlsx`
+voltou com as 60 linhas em `APROVAR` (literal), `Aprovado por="Igor"`,
+`Data aprovação="2026-09-17"`, todas completas, e foi importada/mesclada
+no de-para local (`depara_nomes.json`, fora do Git). Em seguida o
+usuário confirmou que os códigos 1955 (VR), 813 (Compras), 806
+(Farmácia) e 96 (Adicional Noturno) valem tanto para Filial quanto para
+Matriz (mesmo padrão do 1524/Cesta) — `config/clientes/art_latex.json`
+e `.claude/rules/art-latex.md` atualizados.
 
-Importante: `PASS` aqui é o relatório de conferência
-(`RelatorioEvento.pode_exportar()==True`) — **nenhum `.csv` de produção
-foi gerado ainda** via `QuestorExporterV` nesta sessão.
+**Reprocessamento com Matriz+Filial nos 5 eventos revelou uma
+pendência nova**: ao incluir os dados reais da Matriz, os eventos 96 e
+1955 passaram a ter pessoas `NOT_FOUND` inéditas (14 e 11
+respectivamente) que não faziam parte das 60 já homologadas — porque a
+extração e a consolidação de identidade anteriores só tinham rodado
+sobre a Filial para esses 4 eventos. Isso é esperado e correto: o
+fail-closed por evento pegou a ampliação de escopo e voltou a bloquear
+em vez de assumir que a mesma lista de 60 cobria todo mundo.
 
-Continuam PENDENTES, sem relação com o gate de identidade: certificação
-binária tipo H, versão do Questor, Vale-transporte, códigos de evento
-da Matriz para as 4 abas (VR/Compras/Farmácia/Adicional Noturno — só
-rodadas na Filial; a Matriz não tem código confirmado para elas).
+**Status atual, três camadas separadas (correção de terminologia
+2026-09-18 — o "5/5 PASS" anterior media só o gate de identidade e não
+deve ser lido como liberação de produção):**
 
-Detalhes completos em `docs/P01_ART_LATEX_QUESTOR.md` e
-`docs/DECISIONS.md` (entradas de 2026-09-17 e 2026-09-18). Nenhum dado
-pessoal foi reproduzido em qualquer lugar versionado. Nenhum exportador
-ligado à produção ainda foi acionado — `BLOCKED` global do P01 continua
-valendo pelos itens PENDENTES acima.
+| Evento | IDENTIDADE | EXPORTAÇÃO V | PRODUÇÃO |
+|---|---|---|---|
+| 806 Farmácia | PASS | ELEGÍVEL PARA HOMOLOGAÇÃO (candidato gerado) | BLOCKED |
+| 813 Compras | PASS | ELEGÍVEL PARA HOMOLOGAÇÃO (candidato gerado) | BLOCKED |
+| 1524 Cesta Básica | PASS | ELEGÍVEL PARA HOMOLOGAÇÃO (candidato gerado) | BLOCKED |
+| 96 Adicional Noturno | BLOCKED (14 novos NOT_FOUND na Matriz) | BLOCKED | BLOCKED |
+| 1955 VR | BLOCKED (11 novos NOT_FOUND na Matriz) | BLOCKED | BLOCKED |
+
+Para 806/813/1524: candidatos `.csv` tipo V gerados em
+`homologacao/art_latex/questor/homologacao_v_candidatos/` (fora do
+Git), nomeados `CANDIDATO_HOMOLOGACAO_evento_<N>_competencia_08-2026.csv`
+— nunca chamados de "final"/"produção"/"oficial". Cada um foi validado
+por round-trip contra o contrato físico certificado
+(`questor_layout.parse_arquivo_layout`) e por reconciliação
+origem→canônico→CSV em quantidade e valor (Decimal, nunca float) —
+todos batendo exatamente. Para 1524, Matriz e Filial também batem
+separadamente antes do total combinado. Manifesto completo (JSON) em
+`homologacao_v_candidatos/manifesto_homologacao.json` (fora do Git).
+
+`QuestorExporterH` continua bloqueado incondicionalmente (sem
+certificação binária tipo H). Nenhum CSV foi submetido ao Questor;
+nenhuma importação automática foi feita; `GERAR_PARA_O_QUESTOR.bat`
+não foi tocado.
+
+Detalhes completos em `docs/DECISIONS.md` (entradas de 2026-09-17 e
+2026-09-18). Nenhum dado pessoal foi reproduzido em qualquer lugar
+versionado.
 
 ## Próximo passo
 
-Decidir com o usuário se/quando gerar os `.csv` de produção dos 5
-eventos já `PASS` (96, 806, 813, 1524, 1955) via `QuestorExporterV`, e
-planejar a homologação formal do processo (`/homologar-automacao`)
-antes de qualquer uso em operação real. Em paralelo, seguem PENDENTES
-sem depender deste gate: (1) obter/confirmar códigos de evento da
-Matriz para as 4 abas restantes; (2) obter um `.csv` real tipo H para
-certificação binária; (3) confirmar versão do Questor; (4) resolver a
-ausência de dados de Vale-transporte.
+Duas frentes independentes:
+1. **96 e 1955**: rodar uma nova revisão de identidade (mesmo fluxo
+   `revisao_depara.py`) só para as pessoas NOT_FOUND novas trazidas
+   pela Matriz, e homologar como já foi feito para as 60 anteriores.
+2. **806, 813, 1524**: decidir com o usuário quando submeter
+   manualmente os 3 candidatos já elegíveis para o teste real de
+   importação no Questor (fora desta automação) — só depois de um
+   sucesso confirmado manualmente é que entram em consideração para
+   qualquer automação de produção.
+
+Em paralelo, seguem PENDENTES sem depender deste gate: `.csv` real
+tipo H para certificação binária, versão do Questor, dados de
+Vale-transporte (815).
 
 ## Como retomar
 

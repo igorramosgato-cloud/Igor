@@ -3,6 +3,129 @@
 Entradas mais recentes no topo. Formato definido em
 `.claude/skills/registrar-decisao/SKILL.md`.
 
+## 2026-09-18 — Homologação formal dos eventos V + geração de candidatos (taxonomia IDENTIDADE/EXPORTAÇÃO V/PRODUÇÃO)
+
+**Contexto:** execução do gate "homologação formal dos eventos V +
+geração de arquivos candidatos", pedido explicitamente pelo usuário,
+com correção de terminologia: o "5/5 PASS" registrado antes media só
+`IDENTIDADE`/`MATCHING` e não deveria ter sido lido como liberação de
+produção — `TOTALMENTE LIBERADO` era forte demais para o que de fato
+estava certificado.
+
+**Decisão:** adotada a taxonomia de 3 camadas por evento:
+
+- **IDENTIDADE** — match exato + de-para, sem `NOT_FOUND`/`AMBIGUOUS`/
+  inválido.
+- **EXPORTAÇÃO V** — candidato `.csv` gerado, contrato físico validado
+  por round-trip contra `questor_layout.parse_arquivo_layout` (já
+  certificado, não alterado), e reconciliação origem→canônico→CSV em
+  quantidade e valor via `Decimal` (nunca float).
+- **PRODUÇÃO** — sempre `BLOCKED` nesta automação: nenhuma importação
+  real ou automática é feita por ela.
+
+Ao incluir a Matriz nos 4 eventos recém-confirmados (1955, 813, 806,
+96 — ver decisão anterior desta mesma data), a extração revelou
+pessoas `NOT_FOUND` inéditas em 2 deles (96: 14 pessoas; 1955: 11
+pessoas) que não faziam parte das 60 já homologadas — a
+extração/consolidação anterior só tinha rodado sobre a Filial para
+essas 4 abas.
+
+**Resultado por evento:**
+
+| Evento | IDENTIDADE | EXPORTAÇÃO V | PRODUÇÃO |
+|---|---|---|---|
+| 806 Farmácia | PASS | ELEGÍVEL PARA HOMOLOGAÇÃO | BLOCKED |
+| 813 Compras | PASS | ELEGÍVEL PARA HOMOLOGAÇÃO | BLOCKED |
+| 1524 Cesta Básica (Matriz+Filial) | PASS | ELEGÍVEL PARA HOMOLOGAÇÃO | BLOCKED |
+| 96 Adicional Noturno | BLOCKED (14 NOT_FOUND novos da Matriz) | BLOCKED | BLOCKED |
+| 1955 VR | BLOCKED (11 NOT_FOUND novos da Matriz) | BLOCKED | BLOCKED |
+
+Reconciliação (Decimal, origem = canônico = csv, em quantidade e
+valor):
+- 806: 11 = 11 = 11 registros, R$ 985,96 nas três camadas.
+- 813: 24 = 24 = 24 registros, R$ 1.501,28 nas três camadas.
+- 1524: 317 = 317 = 317 registros, total 317 (R$1,00/colaborador);
+  Matriz 117 registros/R$117, Filial 200 registros/R$200, batendo
+  separadamente antes do total combinado.
+
+Contrato físico `PASS` nos 3 candidatos gerados. Nenhum CSV tipo H foi
+gerado (`QuestorExporterH` continua bloqueado incondicionalmente).
+Nenhuma importação automática no Questor foi feita.
+`GERAR_PARA_O_QUESTOR.bat` não foi alterado. Os 3 candidatos (806, 813,
+1524) e o manifesto de homologação completo (JSON com cobertura,
+reconciliação e SHA-256 de cada candidato) ficam em
+`homologacao/art_latex/questor/homologacao_v_candidatos/`, fora do Git
+(confirmado via `git check-ignore`), nomeados explicitamente
+`CANDIDATO_HOMOLOGACAO_...` — nunca "final"/"produção"/"oficial".
+
+**Checklist `/homologar-automacao` aplicado a este escopo:**
+1. Dados de origem são os arquivos reais já inventariados em
+   `evidencia/manifest.json` — uso aqui é só geração de candidato para
+   revisão manual, não operação.
+2. 200/200 testes passando; nenhum código de biblioteca certificado
+   foi alterado (só `config/clientes/art_latex.json`, mais a
+   orquestração no script de reexecução, que reusa
+   `QuestorExporterV`/`questor_layout.py` sem modificá-los).
+3. Rastreabilidade: manifesto de homologação registra
+   origem→decisão→saída por evento.
+4. Evidência de saída real validada por humano: **AINDA NÃO** — os
+   candidatos ainda não foram submetidos manualmente ao Questor,
+   então **a homologação não pode ser considerada concluída para fins
+   de liberação de produção**.
+5. Pendências explícitas (96, 1955, tipo H, versão Questor, VT)
+   continuam bloqueando a geração de arquivos de produção para os
+   casos que dependem delas.
+
+**Evidência:** script de reexecução rodado nesta sessão em 2026-09-18
+contra os arquivos reais (`planilha_importacao_matriz.xlsm`,
+`planilha_importacao_filial.xlsm`, `base_ativos_art_latex.csv`,
+`depara_nomes.json` homologado); `manifesto_homologacao.json` local
+com detalhamento completo por evento.
+
+**Impacto:** `state/tasks.json` e `state/PROJECT_STATE.md` atualizados
+com a tabela de 3 camadas por evento e os próximos passos (nova
+rodada de identidade para 96/1955; decisão do usuário sobre submissão
+manual dos 3 candidatos elegíveis ao teste real de importação no
+Questor). `P01` continua com status geral `blocked`.
+
+## 2026-09-18 — Códigos de evento da Matriz para VR/Compras/Farmácia/Adicional Noturno confirmados (mesmos da Filial)
+
+**Contexto:** os eventos VR (1955), Compras (813), Farmácia (806) e
+Adicional Noturno (96) tinham dados reais nas abas correspondentes da
+Matriz (`Vale-refeicao`: 123 linhas, `Vale-compras`: 3, `convenio
+farmacia`: 4, `Adicional Noturno`: 72 — mesma estrutura de colunas
+`COD. FUNC.`/`NOME`/`VALOR` da Filial, cabeçalho na linha 5, dados a
+partir da linha 6), mas sem código de evento confirmado para a Matriz
+— status `PENDENTE`, dados da Matriz não usados no pipeline até agora.
+
+**Decisão:** o usuário confirmou diretamente, nesta conversa, que os
+mesmos códigos já usados na Filial (1955 VR, 813 Compras, 806
+Farmácia, 96 Adicional Noturno) valem também para a Matriz — não são
+eventos exclusivos da Filial, é o mesmo código de evento nas duas
+unidades (mesmo padrão evidencial já usado para o código 1524 da Cesta
+Básica, confirmado em 2026-09-17).
+
+`config/clientes/art_latex.json` atualizado: a unidade `matriz` ganhou
+os 4 eventos, com os mesmos códigos e `tipo: "valor"` da Filial.
+`.claude/rules/art-latex.md` atualizado com a tabela e a nota de
+confirmação.
+
+**Impacto:** o arquivo de importação combinado desses 4 eventos passa
+a juntar Matriz+Filial (como já acontecia só para 1524/Cesta) — não
+mais somente Filial. Isso exige reprocessar o pipeline: extrair os
+registros da Matriz para essas 4 abas, combinar com os já extraídos da
+Filial, rodar matching (exato + de-para já homologado) e gerar novo
+relatório de conferência por evento. Nenhum CSV de produção foi gerado
+ainda — a mudança foi feita antes da geração dos candidatos de
+homologação tipo V, para que a cobertura correta (Matriz+Filial nos 5
+eventos) já entre nos candidatos.
+
+**Evidência:** confirmação textual direta do usuário nesta conversa em
+2026-09-18 ("ESSES NUMEROS DE EVENTOS SÃO PARA A MATRIZ E FILIAL"),
+interpretada e confirmada de volta ao usuário antes da alteração de
+config, seguindo o mesmo padrão evidencial já usado para o código 1524
+da Cesta Matriz.
+
 ## 2026-09-18 — Identidade homologada; 5 eventos do pacote reexecutados e em PASS
 
 **Contexto:** as 60 correspondências de identidade não resolvidas pelo

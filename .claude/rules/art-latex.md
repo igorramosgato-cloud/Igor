@@ -26,6 +26,20 @@ Este arquivo é a documentação legível da mesma configuração.
 |-------:|------------------------|-------|
 | 50     | HE 100% Noturna        | Hora  |
 | 1524   | Cesta Básica (desconto) | Valor |
+| 1955   | VR                     | Valor |
+| 813    | Compras                | Valor |
+| 806    | Farmácia               | Valor |
+| 96     | Adicional Noturno      | Valor |
+
+Os códigos 1955 (VR), 813 (Compras), 806 (Farmácia) e 96 (Adicional
+Noturno) da Matriz foram confirmados pelo usuário em 2026-09-18 como os
+mesmos códigos dos eventos equivalentes na Filial (ver
+`docs/DECISIONS.md`, 2026-09-18). Antes dessa confirmação, esses 4
+eventos ficavam `PENDENTE` na Matriz apesar de haver dados reais nas
+abas correspondentes (`Vale-refeicao`, `Vale-compras`, `convenio
+farmacia`, `Adicional Noturno`) — o arquivo de importação combinado
+agora deve juntar Matriz+Filial para os 5 eventos de valor (1524, 1955,
+813, 806, 96), não só para a Cesta.
 
 O código 1524 da Cesta Básica da Matriz foi confirmado pelo usuário em
 2026-09-17 — é o mesmo código do evento equivalente na Filial, e sua

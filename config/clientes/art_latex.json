@@ -31,6 +31,30 @@
           "natureza": "desconto",
           "regra": "R$ 1,00 por colaborador listado na aba 'Cesta basica' (contagem de linhas preenchidas; a aba não tem coluna de valor explícita, ver .claude/rules/art-latex.md)",
           "observacao": "Código confirmado pelo usuário em 2026-09-17 (mesmo código do evento equivalente na Filial). A regra de R$ 1,00/colaborador foi herdada por analogia com a Filial, não reconfirmada explicitamente para a Matriz."
+        },
+        {
+          "codigo": 1955,
+          "descricao": "VR",
+          "tipo": "valor",
+          "observacao": "Código confirmado pelo usuário em 2026-09-18 como o mesmo código do evento equivalente na Filial (ver docs/DECISIONS.md, 2026-09-18)."
+        },
+        {
+          "codigo": 813,
+          "descricao": "Compras",
+          "tipo": "valor",
+          "observacao": "Código confirmado pelo usuário em 2026-09-18 como o mesmo código do evento equivalente na Filial (ver docs/DECISIONS.md, 2026-09-18)."
+        },
+        {
+          "codigo": 806,
+          "descricao": "Farmácia",
+          "tipo": "valor",
+          "observacao": "Código confirmado pelo usuário em 2026-09-18 como o mesmo código do evento equivalente na Filial (ver docs/DECISIONS.md, 2026-09-18)."
+        },
+        {
+          "codigo": 96,
+          "descricao": "Adicional Noturno",
+          "tipo": "valor",
+          "observacao": "Código confirmado pelo usuário em 2026-09-18 como o mesmo código do evento equivalente na Filial (ver docs/DECISIONS.md, 2026-09-18)."
         }
       ]
     }
