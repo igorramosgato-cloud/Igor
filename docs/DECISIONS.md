@@ -3,6 +3,67 @@
 Entradas mais recentes no topo. Formato definido em
 `.claude/skills/registrar-decisao/SKILL.md`.
 
+## 2026-09-18 — Identidade homologada; 5 eventos do pacote reexecutados e em PASS
+
+**Contexto:** as 60 correspondências de identidade não resolvidas pelo
+match exato (processo P01, cliente ART LATEX) chegaram à etapa final da
+sequência combinada anteriormente: homologação humana real.
+
+**Decisão:** a planilha `revisao_depara_nomes_HOMOLOGADA.xlsx` foi
+recebida com as 60 linhas marcadas com o literal `APROVAR` (não mais
+`RECOMENDAR_APROVAR`), `Aprovado por = "Igor"`, `Data aprovação =
+"2026-09-17"`, todas com código sugerido preenchido — verificação
+estrutural confirmou 60/60 linhas completas, 0 incompletas. A partir
+disso foi executada a sequência já combinada:
+
+1. `revisao_depara.importar_decisoes_aprovadas` sobre a planilha
+   homologada → 60 `RegistroDePara`.
+2. `depara.mesclar_depara` (de-para local existente estava vazio) +
+   `depara.salvar_depara` em
+   `homologacao/art_latex/questor/depara/depara_nomes.json` (local,
+   fora do Git — confirmado via `git check-ignore`).
+3. Reexecução dos 5 eventos do pacote (96 Adicional Noturno, 806
+   Farmácia, 813 Compras, 1524 Cesta Básica Matriz+Filial, 1955 VR)
+   contra os arquivos reais (`planilha_importacao_matriz.xlsm`,
+   `planilha_importacao_filial.xlsm`, `base_ativos_art_latex.csv`).
+
+**Resultado: todos os 5 eventos passaram a `PASS`** (0 `NOT_FOUND`, 0
+`AMBIGUOUS`, 0 inválidos, em cada um). Manifesto: **TOTALMENTE
+LIBERADO** (5/5 gerados, 0 bloqueados).
+
+Detalhe por evento (TOTAL / EXATO / DE-PARA):
+- 96 Adicional Noturno: 44 / 33 / 11
+- 806 Farmácia: 7 / 5 / 2
+- 813 Compras: 21 / 16 / 5
+- 1524 Cesta Básica (Matriz+Filial): 317 / 304 / 13
+- 1955 VR: 233 / 190 / 43
+
+Consolidado de pessoas (todas as unidades/eventos rodados): 412 pessoas
+únicas, 352 resolvidas por match exato, 60 resolvidas por de-para
+homologado, 0 ainda não resolvidas, 0 ambíguas.
+
+**Isso não libera exportação de produção automaticamente.** `PASS`
+aqui é o relatório de conferência (`RelatorioEvento.pode_exportar() ==
+True`) — a geração efetiva do arquivo `.csv` via `QuestorExporterV`
+para cada evento ainda não foi executada nesta sessão.
+`QuestorExporterH` continua bloqueado incondicionalmente (sem
+certificação binária tipo H). Continuam PENDENTE, sem relação com este
+gate: códigos de evento da Matriz para VR/Compras/Farmácia/Adicional
+Noturno (essas 4 abas só foram rodadas na Filial), VT (815), versão do
+Questor.
+
+**Evidência:** planilha real `revisao_depara_nomes_HOMOLOGADA.xlsx`
+(fora do Git), aprovador "Igor", data "2026-09-17"; script de
+reexecução rodado nesta sessão em 2026-09-18 contra os arquivos reais
+já inventariados (`homologacao/art_latex/questor/evidencia/manifest.json`);
+`depara_nomes.json` local gerado com 60 entradas.
+
+**Impacto:** `state/tasks.json` e `state/PROJECT_STATE.md` atualizados
+para refletir o gate de identidade como homologado e os 5 eventos do
+pacote como `PASS` no relatório de conferência. `P01` continua com
+status geral `blocked` pelos itens ainda PENDENTES listados acima —
+nenhum arquivo de exportação de produção foi gerado ainda.
+
 ## 2026-09-18 — Divergência de unidade em 2 casos do de-para (ANA CAROLINE SABINO, KAYLANE DE OLIVEIRA MENDONÇA) não bloqueia identidade
 
 **Contexto:** na revisão documental por evidência dos 60 nomes não

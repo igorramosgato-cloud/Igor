@@ -40,27 +40,44 @@ divergência não bloqueia a identidade desses 2 casos — decisão
 registrada em `docs/DECISIONS.md` (2026-09-18). Isso não homologa
 nenhuma correspondência; nenhuma importação de de-para foi feita.
 
-Continuam PENDENTES: certificação binária tipo H, versão do Questor,
-Vale-transporte, códigos de evento da Matriz para 4 abas.
+**Identidade homologada e 5 eventos reexecutados, todos PASS
+(2026-09-18)**: a planilha `revisao_depara_nomes_HOMOLOGADA.xlsx` voltou
+com as 60 linhas em `APROVAR` (literal), `Aprovado por="Igor"`,
+`Data aprovação="2026-09-17"`, todas completas. Sequência executada:
+`revisao_depara.importar_decisoes_aprovadas` → `depara.mesclar_depara`/
+`salvar_depara` (`depara_nomes.json` local, fora do Git, confirmado via
+`git check-ignore`) → reexecução dos 5 eventos do pacote contra os
+arquivos reais. Resultado: **96, 806, 813, 1524, 1955 todos em `PASS`**
+(0 NOT_FOUND, 0 AMBIGUOUS, 0 inválidos cada); manifesto **TOTALMENTE
+LIBERADO**. Consolidado: 412 pessoas únicas, 352 por match exato, 60
+por de-para homologado, 0 pendentes, 0 ambíguas. Detalhe completo em
+`docs/DECISIONS.md` (2026-09-18).
+
+Importante: `PASS` aqui é o relatório de conferência
+(`RelatorioEvento.pode_exportar()==True`) — **nenhum `.csv` de produção
+foi gerado ainda** via `QuestorExporterV` nesta sessão.
+
+Continuam PENDENTES, sem relação com o gate de identidade: certificação
+binária tipo H, versão do Questor, Vale-transporte, códigos de evento
+da Matriz para as 4 abas (VR/Compras/Farmácia/Adicional Noturno — só
+rodadas na Filial; a Matriz não tem código confirmado para elas).
 
 Detalhes completos em `docs/P01_ART_LATEX_QUESTOR.md` e
-`docs/DECISIONS.md` (entradas de 2026-09-17). Nenhum dado pessoal foi
-reproduzido em qualquer lugar versionado. Nenhum exportador ligado à
-produção — `BLOCKED` global do P01 continua valendo.
+`docs/DECISIONS.md` (entradas de 2026-09-17 e 2026-09-18). Nenhum dado
+pessoal foi reproduzido em qualquer lugar versionado. Nenhum exportador
+ligado à produção ainda foi acionado — `BLOCKED` global do P01 continua
+valendo pelos itens PENDENTES acima.
 
 ## Próximo passo
 
-Trabalho humano: um analista de DP abre
-`homologacao/art_latex/questor/depara/revisao_depara_nomes.xlsx`
-localmente, confirma ou rejeita cada uma das 60 sugestões (ou busca
-manualmente as 6 sem candidato), preenche `Decisão analista`
-(`APROVAR`/`REJEITAR`), `Aprovado por` e `Data aprovação`, e salva.
-
-Depois disso, rodar `revisao_depara.importar_decisoes_aprovadas` sobre a
-planilha revisada, mesclar com `depara.mesclar_depara`, salvar com
-`depara.salvar_depara`, e reexecutar os 5 eventos — os que ficarem 100%
-resolvidos passam a `PASS` no manifesto e podem ser gerados pelo
-`QuestorExporterV`, independentemente dos demais.
+Decidir com o usuário se/quando gerar os `.csv` de produção dos 5
+eventos já `PASS` (96, 806, 813, 1524, 1955) via `QuestorExporterV`, e
+planejar a homologação formal do processo (`/homologar-automacao`)
+antes de qualquer uso em operação real. Em paralelo, seguem PENDENTES
+sem depender deste gate: (1) obter/confirmar códigos de evento da
+Matriz para as 4 abas restantes; (2) obter um `.csv` real tipo H para
+certificação binária; (3) confirmar versão do Questor; (4) resolver a
+ausência de dados de Vale-transporte.
 
 ## Como retomar
 
