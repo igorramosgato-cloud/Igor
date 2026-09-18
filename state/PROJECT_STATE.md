@@ -59,19 +59,19 @@ sobre a Filial para esses 4 eventos. Isso é esperado e correto: o
 fail-closed por evento pegou a ampliação de escopo e voltou a bloquear
 em vez de assumir que a mesma lista de 60 cobria todo mundo.
 
-**Status atual, três camadas separadas (correção de terminologia
-2026-09-18 — o "5/5 PASS" anterior media só o gate de identidade e não
-deve ser lido como liberação de produção):**
+**Status atual, três camadas separadas** (terminologia fixada em
+2026-09-18 — `PASS` de IDENTIDADE nunca significa liberação de
+produção):
 
 | Evento | IDENTIDADE | EXPORTAÇÃO V | PRODUÇÃO |
 |---|---|---|---|
 | 806 Farmácia | PASS | ELEGÍVEL PARA HOMOLOGAÇÃO (candidato gerado) | BLOCKED |
 | 813 Compras | PASS | ELEGÍVEL PARA HOMOLOGAÇÃO (candidato gerado) | BLOCKED |
 | 1524 Cesta Básica | PASS | ELEGÍVEL PARA HOMOLOGAÇÃO (candidato gerado) | BLOCKED |
-| 96 Adicional Noturno | BLOCKED (14 novos NOT_FOUND na Matriz) | BLOCKED | BLOCKED |
-| 1955 VR | BLOCKED (11 novos NOT_FOUND na Matriz) | BLOCKED | BLOCKED |
+| 1955 VR | **PASS** | **ELEGÍVEL PARA HOMOLOGAÇÃO (candidato gerado)** | BLOCKED |
+| 96 Adicional Noturno | BLOCKED (1 pessoa não localizada) | BLOCKED | BLOCKED |
 
-Para 806/813/1524: candidatos `.csv` tipo V gerados em
+Para 806/813/1524/1955: candidatos `.csv` tipo V gerados em
 `homologacao/art_latex/questor/homologacao_v_candidatos/` (fora do
 Git), nomeados `CANDIDATO_HOMOLOGACAO_evento_<N>_competencia_08-2026.csv`
 — nunca chamados de "final"/"produção"/"oficial". Cada um foi validado
@@ -125,10 +125,28 @@ entre as 22 pessoas, 0 confirmados sem código/nome preenchido,
 vazios** — nada foi homologado, apenas classificado tecnicamente.
 
 Por evento: **1955** = 11/11 pessoas com identidade tecnicamente
-resolvida (6 direta + 5 cruzada) — pode chegar a `PASS` de identidade
-assim que homologado. **96** = 13/14 resolvidas (8 direta + 5 cruzada)
-+ 1 rejeitada — ficará com 1 pendência mesmo após homologação, até
-localizar o cadastro correto desse caso.
+resolvida (6 direta + 5 cruzada). **96** = 13/14 resolvidas (8 direta +
+5 cruzada) + 1 rejeitada.
+
+**Homologação da 2ª rodada documental e reexecução (2026-09-18)**: a
+planilha `revisao_depara_nomes_96_1955_HOMOLOGADA.xlsx` voltou com 21
+`APROVAR` (literal, `Aprovado por="Igor"`, `Data aprovação="2026-09-17"`,
+todos completos) + 1 `REJEITAR` (a pessoa que a 2ª rodada documental não
+conseguiu localizar em nenhuma fonte — mantida bloqueada
+conscientemente, nenhum código inventado). Importados os 21 via
+`revisao_depara.importar_decisoes_aprovadas`, mesclados no de-para
+local (60 → **81 entradas**, `depara_nomes.json`, fora do Git).
+
+Reexecução dos 5 eventos: **1955 chegou a `PASS`** (356 registros, 0
+`NOT_FOUND`, 0 `AMBIGUOUS`) — candidato V gerado (contrato físico PASS,
+reconciliação 356=356=356 registros / R$ 16.336,76 nas 3 camadas,
+Decimal). **96 continua `BLOCKED`** com exatamente 1 `NOT_FOUND`
+remanescente — a mesma pessoa rejeitada, como esperado; nenhum registro
+novo apareceu.
+
+**Resultado final: 4 dos 5 eventos (806, 813, 1524, 1955) elegíveis
+para homologação V; só 96 segue bloqueado, por 1 única identidade não
+localizada.**
 
 Planilha real em
 `homologacao/art_latex/questor/depara/revisao_depara_nomes_96_1955.xlsx`
@@ -138,19 +156,14 @@ consolidado.
 
 ## Próximo passo
 
-Duas frentes independentes:
-1. **96 e 1955**: analista de DP revisa
-   `revisao_depara_nomes_96_1955.xlsx` (22 pessoas), homologa
-   (`APROVAR` + responsável + data). Depois:
-   `revisao_depara.importar_decisoes_aprovadas` →
-   `depara.mesclar_depara`/`salvar_depara` → reexecutar 96 e 1955 → se
-   100% resolvidos, gerar candidatos V e submeter ao mesmo gate de
-   reconciliação já aplicado a 806/813/1524.
-2. **806, 813, 1524**: decidir com o usuário quando submeter
-   manualmente os 3 candidatos já elegíveis para o teste real de
-   importação no Questor (fora desta automação) — só depois de um
-   sucesso confirmado manualmente é que entram em consideração para
-   qualquer automação de produção.
+1. Decidir com o usuário quando submeter manualmente os 4 candidatos já
+   elegíveis (806, 813, 1524, 1955) para o teste real de importação no
+   Questor (fora desta automação) — só depois de um sucesso confirmado
+   manualmente é que entram em consideração para qualquer automação de
+   produção.
+2. Evento 96 fica com 1 pendência de identidade em aberto — só avança
+   se surgir nova evidência real para essa pessoa específica; não deve
+   ser forçado com um código adivinhado.
 
 Em paralelo, seguem PENDENTES sem depender deste gate: `.csv` real
 tipo H para certificação binária, versão do Questor, dados de
