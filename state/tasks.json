@@ -1,5 +1,5 @@
 {
-  "atualizado_em": "2026-09-17",
+  "atualizado_em": "2026-09-18",
   "tarefas": [
     {
       "id": "P01",
@@ -24,8 +24,9 @@
       "gate_sugestao_fuzzy": "IMPLEMENTADO (2026-09-17) — src/jrdp/sugestao_fuzzy.py; só diagnóstico, nunca decide matching; teste prova ausência de método aplicar/resolver",
       "gate_identidade": "IMPLEMENTADO E VALIDADO (2026-09-17) — src/jrdp/identidade.py; validado contra dados reais: 74 não encontrados brutos consolidam para 60 pessoas únicas (11 em mais de um evento)",
       "gate_fail_closed_por_evento": "IMPLEMENTADO (2026-09-17) — src/jrdp/manifesto.py; evento 100% resolvido gera arquivo mesmo com outros BLOCKED; manifesto real atual: TOTALMENTE BLOQUEADO (0/5 eventos, sem de-para homologado ainda)",
-      "gate_planilha_revisao_identidade": "GERADA, AGUARDANDO REVISÃO HUMANA (2026-09-17) — src/jrdp/revisao_depara.py; planilha real em homologacao/art_latex/questor/depara/revisao_depara_nomes.xlsx (fora do Git) com as 60 pessoas: 54 com sugestão automática (corte 0,6), 6 sem candidato; nenhuma decisão preenchida",
-      "motivo_bloqueio": "Trabalho humano pendente: analista de DP abrir a planilha de revisão, decidir (APROVAR/REJEITAR) cada uma das 60 pessoas, e então importar via revisao_depara.importar_decisoes_aprovadas + depara.mesclar_depara/salvar_depara. Em paralelo, seguem PENDENTES sem depender de código: (1) códigos de evento da Matriz para 4 abas; (2) arquivo .csv real tipo H; (3) versão do Questor. Depois disso: testes end-to-end e homologação formal antes de liberar exportação de produção.",
+      "gate_planilha_revisao_identidade": "REVISADA POR EVIDÊNCIA DOCUMENTAL, AGUARDANDO HOMOLOGAÇÃO HUMANA (2026-09-18) — revisão assistida por IA (não homologação) cruzou as 60 pessoas com Base Questor/recibos 08-2026/admissões/Relação de Eventos; resultado: 60 RECOMENDAR_APROVAR (0 APROVAR), Aprovado por/Data aprovação vazios em 100%; planilha real fora do Git",
+      "gate_divergencia_unidade_depara": "CONFIRMADO PELO USUÁRIO (2026-09-18) — ANA CAROLINE SABINO e KAYLANE DE OLIVEIRA MENDONÇA (unidade origem=filial, cadastro atual=Matriz): divergência de unidade tratada como não bloqueante para identidade só nesses 2 casos, por autorização direta; unidade de origem (filial) preservada na chave do de-para; ver docs/DECISIONS.md 2026-09-18. Não homologa correspondência nenhuma — só desbloqueia esses 2 casos de ficarem presos em PENDENTE por divergência de lotação",
+      "motivo_bloqueio": "Trabalho humano pendente: responsável de DP revisar as 60 recomendações RECOMENDAR_APROVAR da planilha (evidência documental já feita pela revisão assistida por IA, mas isso não é homologação), trocar para APROVAR + preencher Aprovado por + Data aprovação nas que aceitar, e então importar via revisao_depara.importar_decisoes_aprovadas + depara.mesclar_depara/salvar_depara. Em paralelo, seguem PENDENTES sem depender de código: (1) códigos de evento da Matriz para 4 abas; (2) arquivo .csv real tipo H; (3) versão do Questor. Depois disso: testes end-to-end e homologação formal antes de liberar exportação de produção.",
       "referencia": "docs/P01_ART_LATEX_QUESTOR.md"
     },
     {

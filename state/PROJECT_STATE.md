@@ -1,6 +1,6 @@
 # Estado do projeto
 
-**Atualizado em:** 2026-09-17
+**Atualizado em:** 2026-09-18
 
 ## Onde estamos
 
@@ -26,6 +26,19 @@ Novo módulo `src/jrdp/revisao_depara.py`: gera a planilha
 `"APROVAR"` com aprovador/data preenchidos
 (`importar_decisoes_aprovadas`) — qualquer coisa incompleta é erro, não
 suposição.
+
+**Revisão de identidade por evidência documental (2026-09-18)**: as 60
+pessoas foram cruzadas contra Base Questor, recibos 08/2026,
+admissões/cadastros e Relação de Eventos (revisão assistida por IA, não
+homologação). Resultado: 60 `RECOMENDAR_APROVAR`, 0 `APROVAR`,
+`Aprovado por`/`Data aprovação` vazios em 100% — o valor `APROVAR` fica
+reservado exclusivamente à homologação humana, evitando a ambiguidade
+da leva anterior. 2 casos (ANA CAROLINE SABINO, KAYLANE DE OLIVEIRA
+MENDONÇA) tinham divergência entre unidade de origem (filial) e lotação
+cadastral atual (Matriz); o usuário confirmou diretamente que essa
+divergência não bloqueia a identidade desses 2 casos — decisão
+registrada em `docs/DECISIONS.md` (2026-09-18). Isso não homologa
+nenhuma correspondência; nenhuma importação de de-para foi feita.
 
 Continuam PENDENTES: certificação binária tipo H, versão do Questor,
 Vale-transporte, códigos de evento da Matriz para 4 abas.

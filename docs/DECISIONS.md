@@ -3,6 +3,56 @@
 Entradas mais recentes no topo. Formato definido em
 `.claude/skills/registrar-decisao/SKILL.md`.
 
+## 2026-09-18 — Divergência de unidade em 2 casos do de-para (ANA CAROLINE SABINO, KAYLANE DE OLIVEIRA MENDONÇA) não bloqueia identidade
+
+**Contexto:** na revisão documental por evidência dos 60 nomes não
+encontrados (processo P01, cliente ART LATEX), 2 casos — ANA CAROLINE
+SABINO e KAYLANE DE OLIVEIRA MENDONÇA, ambos com unidade de origem
+`filial` — tiveram identidade/código confirmados, mas a lotação
+cadastral atual encontrada na evidência aponta `Matriz`, provavelmente
+por transferência entre competências. Isso os deixou `PENDENTE` pela
+política fail-closed padrão (unidade divergente).
+
+**Decisão:** o usuário autorizou diretamente, nesta conversa, tratar
+essa divergência de unidade como **não bloqueante para fins de
+identidade no de-para**, apenas para esses 2 casos específicos. Regra
+operacional:
+- a unidade de origem (`filial`) é preservada como parte da chave do
+  de-para (`cliente+unidade+nome`) — não é substituída por `Matriz`;
+- a lotação cadastral atual (`Matriz`) é reconhecida e deve ficar
+  registrada no campo `evidencia` da entrada de-para desses 2 casos,
+  mas não impede a resolução da identidade;
+- a exceção deve permanecer rastreável (nome, evidência da divergência,
+  autorização do usuário, data).
+
+Essa autorização substitui, para fins de governança, a anotação
+equivalente que já existia dentro da planilha de revisão assistida por
+IA (que não tem valor de decisão de negócio por si só) — a decisão
+válida é esta confirmação direta do usuário.
+
+**Isso NÃO homologa as 60 correspondências propostas pela revisão
+assistida por IA.** Todas continuam como `RECOMENDAR_APROVAR` (0 com o
+literal `APROVAR`, `Aprovado por`/`Data aprovação` vazios). Nenhuma
+importação de de-para foi feita, nenhum código foi alterado. O próximo
+gate continua sendo a homologação humana real (troca para `APROVAR` +
+responsável + data) antes de rodar
+`importar_decisoes_aprovadas` → `mesclar_depara` → `salvar_depara` →
+reexecução dos 5 eventos.
+
+**Evidência:** planilhas de revisão de identidade (fora do Git, dados
+reais) — versão "VALIDADA_POR_EVIDENCIA" (os 2 casos como `PENDENTE`,
+com observação textual da divergência de unidade) e versão
+"PRONTA_PARA_HOMOLOGACAO" (mesmos 2 casos reclassificados como
+`RECOMENDAR_APROVAR`); confirmação textual direta do usuário nesta
+conversa em 2026-09-18.
+
+**Impacto:** nenhum impacto em código ou dado versionado. Quando a
+homologação humana ocorrer, esses 2 casos poderão ser aprovados
+(`RECOMENDAR_APROVAR` → `APROVAR` + responsável + data) sem ficar presos
+indefinidamente por causa da divergência de lotação — mas a homologação
+em si ainda não ocorreu e continua sendo pré-requisito para qualquer
+importação de de-para.
+
 ## 2026-09-17 — De-para por cliente+unidade+nome; planilha de revisão humana gerada
 
 **Contexto:** operacionalizar a revisão das 60 pessoas não encontradas
