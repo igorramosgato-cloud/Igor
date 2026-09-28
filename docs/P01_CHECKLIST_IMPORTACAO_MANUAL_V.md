@@ -12,6 +12,44 @@ certutil -hashfile <arquivo>.csv SHA256      (Windows)
 sha256sum <arquivo>.csv                       (Linux/Mac)
 ```
 
+## Opção A (recomendada pelo usuário) — arquivo combinado, 1 importação
+
+Em vez das 4 importações separadas abaixo, pode-se importar um único
+arquivo com os 4 eventos concatenados no mesmo layout certificado
+(bloco `;;;<evento>`/`;;;V`/cabeçalho/linhas repetido por evento, na
+ordem 806 → 813 → 1524 → 1955).
+
+**Atenção:** esta estrutura multi-evento não tem certificação binária
+contra um arquivo real multi-evento já aceito pelo Questor — é uma
+regra de negócio confirmada verbalmente (ver `docs/DECISIONS.md`,
+2026-09-28), não evidência binária direta. Se o Questor rejeitar ou
+importar de forma inesperada, use a Opção B (4 arquivos separados,
+cada um já certificado individualmente) como alternativa.
+
+- Arquivo: `CANDIDATO_HOMOLOGACAO_COMBINADO_806_813_1524_1955_competencia_08-2026.csv`
+- SHA-256 esperado: `826a3b44546fa699a5b180b35648cad38c4045ab1a1e6234cd334885293a1788`
+- Tamanho esperado: 26.678 bytes
+- Total de registros esperado: **708** (806=11, 813=24, 1524=317, 1955=356)
+
+```
+CSV candidato: PASS
+Importação Questor:
+Registros importados (total):
+  806:
+  813:
+  1524:
+  1955:
+Total importado:
+  806:  (esperado R$ 985,96)
+  813:  (esperado R$ 1.501,28)
+  1524: (esperado 317)
+  1955: (esperado R$ 16.336,76)
+Divergências:
+STATUS:
+```
+
+## Opção B — 4 arquivos separados por evento (fallback já certificado individualmente)
+
 ## Ordem de execução
 
 ### 1) Evento 806 — Farmácia

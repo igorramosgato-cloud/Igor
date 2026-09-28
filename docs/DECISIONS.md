@@ -3,6 +3,60 @@
 Entradas mais recentes no topo. Formato definido em
 `.claude/skills/registrar-decisao/SKILL.md`.
 
+## 2026-09-28 — Arquivo de importação combinando múltiplos eventos num único CSV
+
+**Contexto:** até aqui, cada evento gerava um `.csv` tipo V separado —
+um por evento —, com base na certificação física do layout genérico
+(`evento_1889_nova_farma.csv`, um único evento por arquivo). Ao
+preparar a importação manual real dos 4 candidatos elegíveis (806,
+813, 1524, 1955), o usuário informou que, além de Matriz/Filial não
+serem separados na importação (já era assim no pipeline), **também é
+possível juntar todos os eventos em um único arquivo**, o que facilita
+a operação.
+
+**Decisão:** o arquivo combinado segue exatamente o mesmo layout já
+certificado, repetindo o bloco padrão (`;;;<evento>` / `;;;V` /
+cabeçalho `CÓDGIO;NOME;;` / linhas de dados) uma vez por evento,
+concatenado sem separador adicional, na ordem 806 → 813 → 1524 → 1955.
+Gerado
+`CANDIDATO_HOMOLOGACAO_COMBINADO_806_813_1524_1955_competencia_08-2026.csv`
+(fora do Git) concatenando os 4 candidatos já certificados
+individualmente (`QuestorExporterV`, sem alteração de código).
+
+Validação feita:
+1. Cada um dos 4 blocos originais passa isoladamente no parser
+   certificado `questor_layout.parse_arquivo_layout` antes de
+   concatenar.
+2. O arquivo combinado foi re-separado por detecção das linhas
+   `;;;<código>` e cada bloco reconstruído volta a passar no mesmo
+   parser certificado, com os mesmos códigos de evento e a mesma
+   contagem de registros de antes: 806=11, 813=24, 1524=317, 1955=356,
+   total **708 registros, 26.678 bytes**.
+
+**Limitação importante, registrada explicitamente:** esta estrutura
+multi-evento concatenada **não tem certificação binária** contra um
+arquivo real multi-evento já aceito pelo Questor — o único arquivo
+físico certificado até hoje tinha um evento só. É uma regra de negócio
+confirmada verbalmente pelo usuário (mesmo padrão evidencial já usado
+para a extensão da regra H,MM a eventos tipo H em 2026-09-17), não uma
+evidência binária direta. Se a importação real deste arquivo combinado
+falhar ou for aceita com comportamento inesperado no Questor, essa
+estrutura deve ser reavaliada — os 4 arquivos separados por evento
+continuam disponíveis como alternativa já certificada individualmente.
+
+**Evidência:** confirmação textual direta do usuário nesta conversa em
+2026-09-28 ("é o mesmo layout que te enviei"), interpretada como
+repetição do bloco já certificado por evento, concatenado num único
+arquivo.
+
+**Impacto:** novo arquivo candidato gerado (fora do Git); nenhuma
+alteração em `QuestorExporterV`/`questor_layout.py` — a concatenação
+foi feita por script de orquestração, reaproveitando os bytes já
+certificados de cada evento. `docs/P01_CHECKLIST_IMPORTACAO_MANUAL_V.md`
+atualizado para oferecer a opção do arquivo combinado, mantendo os
+valores esperados por evento para conferência mesmo dentro de uma
+importação única.
+
 ## 2026-09-18 — Confirmação final: códigos 96/806/813/1955/1524/50 valem para Matriz E Filial; config mantida
 
 **Contexto:** após o reprocessamento anterior (Matriz+Filial nos 5
