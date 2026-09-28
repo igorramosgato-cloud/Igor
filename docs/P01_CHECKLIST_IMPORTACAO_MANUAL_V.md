@@ -12,34 +12,39 @@ certutil -hashfile <arquivo>.csv SHA256      (Windows)
 sha256sum <arquivo>.csv                       (Linux/Mac)
 ```
 
-## Opção A (recomendada pelo usuário) — arquivo combinado, 1 importação
+## Opção A (recomendada pelo usuário) — arquivo combinado colunar, 1 importação
 
 Em vez das 4 importações separadas abaixo, pode-se importar um único
-arquivo com os 4 eventos concatenados no mesmo layout certificado
-(bloco `;;;<evento>`/`;;;V`/cabeçalho/linhas repetido por evento, na
-ordem 806 → 813 → 1524 → 1955).
+arquivo com os 4 eventos em colunas (uma linha por colaborador, uma
+coluna por evento — layout certificado com evidência física real de
+outro cliente em 2026-09-28, ver `docs/DECISIONS.md`). **Esta é a
+versão corrigida**: uma tentativa anterior (blocos concatenados) foi
+descartada por não bater com a estrutura real do Questor — se você
+recebeu um arquivo chamado `CANDIDATO_HOMOLOGACAO_COMBINADO_...`
+(sem "COLUNAR" no nome), descarte-o, não é mais válido.
 
-**Atenção:** esta estrutura multi-evento não tem certificação binária
-contra um arquivo real multi-evento já aceito pelo Questor — é uma
-regra de negócio confirmada verbalmente (ver `docs/DECISIONS.md`,
-2026-09-28), não evidência binária direta. Se o Questor rejeitar ou
-importar de forma inesperada, use a Opção B (4 arquivos separados,
-cada um já certificado individualmente) como alternativa.
+**Atenção:** o layout colunar em si tem evidência física real, mas de
+**outro cliente** (não um arquivo ART LATEX especificamente aceito).
+Se o Questor rejeitar ou importar de forma inesperada, use a Opção B
+(4 arquivos separados, cada um já certificado individualmente) como
+alternativa.
 
-- Arquivo: `CANDIDATO_HOMOLOGACAO_COMBINADO_806_813_1524_1955_competencia_08-2026.csv`
-- SHA-256 esperado: `826a3b44546fa699a5b180b35648cad38c4045ab1a1e6234cd334885293a1788`
-- Tamanho esperado: 26.678 bytes
-- Total de registros esperado: **708** (806=11, 813=24, 1524=317, 1955=356)
+- Arquivo: `CANDIDATO_HOMOLOGACAO_COLUNAR_806_813_1524_1955_competencia_08-2026.csv`
+- SHA-256 esperado: `52ab95d46a2e7d5d6e247f916c737ec0de36df54825543b58b4e5411694a1e23`
+- Tamanho esperado: 17.249 bytes
+- Total de linhas (colaboradores únicos) esperado: **409**
+- Colunas de evento, na ordem: 806 (Farmácia), 813 (Compras), 1524 (Cesta), 1955 (VR)
 
 ```
 CSV candidato: PASS
 Importação Questor:
-Registros importados (total):
-  806:
-  813:
-  1524:
-  1955:
-Total importado:
+Total de linhas/colaboradores importados:
+Registros importados por coluna:
+  806:  (esperado 11)
+  813:  (esperado 24)
+  1524: (esperado 317)
+  1955: (esperado 356)
+Total importado por coluna:
   806:  (esperado R$ 985,96)
   813:  (esperado R$ 1.501,28)
   1524: (esperado 317)

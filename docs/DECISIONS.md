@@ -3,6 +3,76 @@
 Entradas mais recentes no topo. Formato definido em
 `.claude/skills/registrar-decisao/SKILL.md`.
 
+## 2026-09-28 — CORREÇÃO: layout multi-evento é colunar, não blocos concatenados
+
+**Contexto:** a decisão anterior desta mesma data ("Arquivo de
+importação combinando múltiplos eventos num único CSV") assumiu, só
+por confirmação verbal do usuário ("é o mesmo layout que te enviei"),
+que o arquivo combinado seguiria blocos concatenados (`;;;<evento>` /
+`;;;V` / cabeçalho / linhas, repetido por evento). O usuário então
+enviou um arquivo real de **outro cliente** (não ART LATEX), já aceito
+pelo Questor, com múltiplos eventos tipo H no mesmo arquivo — e essa
+evidência mostra uma estrutura completamente diferente: **colunar**,
+não blocos concatenados. O usuário confirmou que a mesma lógica
+colunar vale para tipo V.
+
+**Decisão:** a hipótese de blocos concatenados está **formalmente
+corrigida** por evidência física real — não é o formato certo (esta
+entrada não apaga a anterior, só a corrige, seguindo a regra de nunca
+alterar silenciosamente uma decisão registrada). O formato correto,
+agora certificado com evidência real (de outro cliente, mesmo
+precedente já usado para certificar o layout single-evento com o
+arquivo da Nova Farma — evidência de contrato físico é multi-cliente,
+regra de negócio/código de evento é que é por cliente), é:
+
+- linha 1: `""` ; `""` ; código evento 1 ; código evento 2 ; ...
+- linha 2: `""` ; `""` ; tipo evento 1 ; tipo evento 2 ; ... (`V` ou `H`)
+- linha 3: `Contrato` ; `Nome` ; rótulo evento 1 ; rótulo evento 2 ; ...
+- linha 4 em diante: `<contrato>` ; `<nome>` ; `<valor evento 1 ou
+  vazio>` ; `<valor evento 2 ou vazio>` ; ... — célula vazia quando a
+  pessoa não tem lançamento naquele evento, **nunca `"0"`**.
+
+Implementado em `src/jrdp/questor_layout.py` (módulo de contrato
+físico já existente, sem alterar o layout single-evento certificado
+anteriormente): novas funções `parse_arquivo_layout_colunar` e
+`montar_arquivo_layout_colunar`, dataclasses `ColunaEvento` e
+`RegistroLayoutColunar`. 11 testes novos com fixture 100% sanitizada
+(`tests/fixtures/questor/layout_colunar_sanitizado.csv`,
+`tests/test_questor_layout_colunar.py`) — nenhum dado do cliente de
+origem da evidência foi usado ou reproduzido em qualquer lugar
+versionado. Suíte completa: **211/211 passando**.
+
+Regenerado o candidato combinado da ART LATEX:
+`CANDIDATO_HOMOLOGACAO_COLUNAR_806_813_1524_1955_competencia_08-2026.csv`
+(fora do Git), substituindo o arquivo anterior de blocos concatenados
+(removido, estrutura incorreta). **409 colaboradores únicos** (linhas),
+4 colunas de evento (806 Farmácia, 813 Compras, 1524 Cesta, 1955 VR).
+Validação: round-trip completo (monta → parseia → confere), e
+reconciliação por evento (quantidade e valor via `Decimal`) bate
+exatamente com os relatórios de conferência já certificados: 806=11
+registros/R$ 985,96; 813=24/R$ 1.501,28; 1524=317/317; 1955=356/R$
+16.336,76.
+
+**Ressalva que continua valendo:** esta estrutura colunar tem
+evidência física real, mas de outro cliente/contexto (não um arquivo
+ART LATEX especificamente aceito). Os 4 arquivos separados por evento
+continuam disponíveis como fallback, caso a importação real do arquivo
+colunar da ART LATEX apresente algum comportamento inesperado no
+Questor.
+
+**Evidência:** arquivo real enviado pelo usuário nesta conversa em
+2026-09-28 (tipo H, 6 eventos, outro cliente, já aceito pelo Questor);
+confirmação textual direta do usuário de que a mesma lógica vale para
+tipo V.
+
+**Impacto:** `src/jrdp/questor_layout.py` (adição, sem alterar
+contrato single-evento existente), `tests/test_questor_layout_colunar.py`
+(novo), `tests/fixtures/questor/layout_colunar_sanitizado.csv` (novo),
+novo candidato real gerado (fora do Git).
+`docs/P01_CHECKLIST_IMPORTACAO_MANUAL_V.md` atualizado: a "Opção A"
+(blocos concatenados) foi substituída pelo arquivo colunar novo, com
+SHA-256 e contagem corretos.
+
 ## 2026-09-28 — Arquivo de importação combinando múltiplos eventos num único CSV
 
 **Contexto:** até aqui, cada evento gerava um `.csv` tipo V separado —
