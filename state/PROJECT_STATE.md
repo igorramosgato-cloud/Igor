@@ -1,12 +1,28 @@
 # Estado do projeto
 
-**Atualizado em:** 2026-09-18
+**Atualizado em:** 2026-09-29
 
 ## Onde estamos
 
 Roadmap item 1 (Variáveis + Benefícios → Questor, cliente ART LATEX) em
-andamento. **200/200 testes passando** (excluindo os dois arquivos com
+andamento. **218/218 testes passando** (excluindo os dois arquivos com
 dependências ausentes no ambiente).
+
+**Novidades de 2026-09-29:**
+- Layout colunar multi-evento (V e H) confirmado com evidência real da
+  própria ART LATEX (dois arquivos reais, competência 09/2026,
+  aceitos pelo Questor) — antes só tínhamos evidência de outro cliente.
+- Código de evento 36 (Extra 50% Noturna) confirmado, Matriz e Filial.
+- `QuestorExporterColunar` implementado (`src/jrdp/exportadores.py`) —
+  exporta tipo V e/ou H misturados no layout colunar, fail-closed por
+  evento. `QuestorExporterH` (layout single-evento antigo) continua
+  bloqueado, sem evidência própria — isso não muda.
+- `scripts/gerar_candidatos_art_latex.py`: primeiro script formal e
+  versionado do projeto, substitui os scripts manuais usados até
+  agora para gerar os candidatos V (806/813/1524/1955).
+- **O que ainda falta pra gerar candidatos tipo H reais**: só a
+  extração de dados da aba "Hora-extra" (`gate_hora_extra_extrator`,
+  ainda "estrutural, não validado") — o layout/exportador já existe.
 
 **Correção de escopo do de-para**: agora é por **cliente+unidade+nome**,
 nunca só nome+unidade — evita reaproveitar uma correspondência da Filial

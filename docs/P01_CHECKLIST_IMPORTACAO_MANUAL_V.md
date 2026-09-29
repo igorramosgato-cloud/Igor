@@ -16,22 +16,24 @@ sha256sum <arquivo>.csv                       (Linux/Mac)
 
 Em vez das 4 importações separadas abaixo, pode-se importar um único
 arquivo com os 4 eventos em colunas (uma linha por colaborador, uma
-coluna por evento — layout certificado com evidência física real de
-outro cliente em 2026-09-28, ver `docs/DECISIONS.md`). **Esta é a
-versão corrigida**: uma tentativa anterior (blocos concatenados) foi
-descartada por não bater com a estrutura real do Questor — se você
-recebeu um arquivo chamado `CANDIDATO_HOMOLOGACAO_COMBINADO_...`
-(sem "COLUNAR" no nome), descarte-o, não é mais válido.
+coluna por evento — layout certificado com evidência física real,
+inclusive da própria ART LATEX em 2026-09-29, ver `docs/DECISIONS.md`).
+**Esta é a versão corrigida**: uma tentativa anterior (blocos
+concatenados) foi descartada por não bater com a estrutura real do
+Questor — se você recebeu um arquivo chamado
+`CANDIDATO_HOMOLOGACAO_COMBINADO_...` (sem "COLUNAR" no nome),
+descarte-o, não é mais válido.
 
-**Atenção:** o layout colunar em si tem evidência física real, mas de
-**outro cliente** (não um arquivo ART LATEX especificamente aceito).
-Se o Questor rejeitar ou importar de forma inesperada, use a Opção B
-(4 arquivos separados, cada um já certificado individualmente) como
-alternativa.
+Gerado agora por `scripts/gerar_candidatos_art_latex.py` (antes era um
+script manual/ad-hoc) — os rótulos das colunas foram ajustados para
+bater com os nomes usados no arquivo real que a ART LATEX já importou
+("Desconto Farmácia", "Desconto Compras", "Desconto Cesta Basica",
+"Vale Refeição"), por isso o SHA-256 mudou em relação à versão
+anterior — a reconciliação (quantidade e valor) é idêntica.
 
 - Arquivo: `CANDIDATO_HOMOLOGACAO_COLUNAR_806_813_1524_1955_competencia_08-2026.csv`
-- SHA-256 esperado: `52ab95d46a2e7d5d6e247f916c737ec0de36df54825543b58b4e5411694a1e23`
-- Tamanho esperado: 17.249 bytes
+- SHA-256 esperado: `e0aca3a7ae43ada66b0b958eb1927ceba2b705bcfc7e72b54b67f54767041a94`
+- Tamanho esperado: 17.294 bytes
 - Total de linhas (colaboradores únicos) esperado: **409**
 - Colunas de evento, na ordem: 806 (Farmácia), 813 (Compras), 1524 (Cesta), 1955 (VR)
 

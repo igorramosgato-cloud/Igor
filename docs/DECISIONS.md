@@ -3,6 +3,61 @@
 Entradas mais recentes no topo. Formato definido em
 `.claude/skills/registrar-decisao/SKILL.md`.
 
+## 2026-09-29 — QuestorExporterColunar (tipo H via layout colunar) + script formal de geração de candidatos
+
+**Contexto:** o usuário pediu para (1) construir capacidade de
+exportação para eventos tipo H, aproveitando a evidência física real
+confirmada mais acima nesta mesma data (layout colunar), e (2)
+formalizar a geração dos candidatos V da ART LATEX, que até agora
+vivia em scripts ad-hoc rodados manualmente no scratchpad da sessão,
+nunca versionados.
+
+**Decisão:** implementado `QuestorExporterColunar` em
+`src/jrdp/exportadores.py` — exporta um ou mais eventos (tipo V e/ou
+H, misturados) no layout colunar certificado com evidência real. Fail-closed
+por evento: cada entrada só entra como coluna se seu relatório de
+conferência estiver `PASS`; evento `BLOCKED` é omitido inteiramente,
+nunca aparece com dados parciais; levanta `ExportacaoBlockedError` só
+se nenhum evento sobrar. `QuestorExporterV` e `QuestorExporterH`
+(layout single-evento antigo) não foram alterados — `QuestorExporterH`
+continua bloqueando incondicionalmente nesse formato específico (nunca
+observado com evidência real), só que agora a mensagem de erro deixa
+claro que `QuestorExporterColunar` é o caminho certo para tipo H. 7
+testes novos (`tests/test_exportador_colunar.py`, dados fictícios).
+
+**Importante — o que isso NÃO resolve:** a capacidade de exportar tipo
+H já existe, mas a **extração** de dados reais da aba "Hora-extra" da
+ART LATEX continua "estrutural, não validado" (0 linhas reais
+confirmadas até hoje) — não foi tocada nesta entrada. O bloqueio de
+tipo H mudou de "não tenho layout" para "tenho layout, falta extração
+de dados real validada" — um gate mais adiante na cadeia, não
+removido.
+
+Também criado `scripts/gerar_candidatos_art_latex.py` (novo,
+versionado — primeiro script formal do projeto, substitui os scripts
+manuais do scratchpad usados até agora) — gera o candidato V colunar
+dos 4 eventos (806, 813, 1524, 1955) a partir dos arquivos reais e do
+de-para já homologado, com reconciliação automática (quantidade e
+valor via `Decimal`) e manifesto JSON, sempre fora do Git. Rodado e
+confirmado: reconciliação idêntica à gerada manualmente antes (409
+colaboradores, 806=11/R$ 985,96, 813=24/R$ 1.501,28, 1524=317/317,
+1955=356/R$ 16.336,76) — só os rótulos das colunas foram ajustados
+para bater com os nomes usados no arquivo real que a ART LATEX já
+importa ("Desconto Farmácia" etc.), então o SHA-256 do candidato
+mudou (conteúdo estrutural e valores idênticos).
+`docs/P01_CHECKLIST_IMPORTACAO_MANUAL_V.md` atualizado com o novo
+SHA-256/tamanho.
+
+**Evidência:** pedido explícito do usuário nesta conversa em
+2026-09-29 ("1 - SIM, 2 - SIM"), respondendo à lista de opções de
+próximo passo.
+
+**Impacto:** `src/jrdp/exportadores.py` (adição, `QuestorExporterV`/`H`
+intocados), `tests/test_exportador_colunar.py` (novo),
+`scripts/gerar_candidatos_art_latex.py` (novo, versionado),
+`docs/P01_CHECKLIST_IMPORTACAO_MANUAL_V.md` (SHA-256/tamanho
+atualizados). 218/218 testes passando.
+
 ## 2026-09-29 — Código 36 confirmado: Extra 50% Noturna, Matriz e Filial
 
 **Contexto:** no arquivo real de tipo H (Ponto) da competência
