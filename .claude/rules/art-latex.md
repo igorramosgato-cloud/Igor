@@ -14,6 +14,7 @@ Este arquivo é a documentação legível da mesma configuração.
 | 29     | Atraso               | Hora  |
 | 25     | DSR                  | Hora  |
 | 50     | HE 100% Noturna      | Hora  |
+| 36     | Extra 50% Noturna    | Hora  |
 | 1955   | VR                   | Valor |
 | 815    | VT                   | Valor |
 | 1524   | Cesta (R$ 1,00/colaborador listado) | Valor |
@@ -26,6 +27,7 @@ Este arquivo é a documentação legível da mesma configuração.
 | Código | Descrição              | Tipo  |
 |-------:|------------------------|-------|
 | 50     | HE 100% Noturna        | Hora  |
+| 36     | Extra 50% Noturna      | Hora  |
 | 1524   | Cesta Básica (desconto) | Valor |
 | 1955   | VR                     | Valor |
 | 813    | Compras                | Valor |
@@ -36,6 +38,12 @@ O código 50 (HE 100% Noturna) foi confirmado pelo usuário em
 2026-09-18 como o mesmo código nas duas unidades (antes só constava na
 Matriz) — continua sujeito ao bloqueio geral de eventos tipo Hora
 (`QuestorExporterH`), sem relação com esta confirmação.
+
+O código 36 (Extra 50% Noturna) foi descoberto em um arquivo real de
+importação de tipo H da competência 09/2026 e confirmado pelo usuário
+em 2026-09-29 como o mesmo evento para Matriz e Filial — mesma
+ressalva do código 50: continua sujeito ao bloqueio geral de eventos
+tipo Hora, sem relação com esta confirmação.
 
 Os códigos 1955 (VR), 813 (Compras), 806 (Farmácia) e 96 (Adicional
 Noturno) da Matriz foram confirmados pelo usuário em 2026-09-18 como os

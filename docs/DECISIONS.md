@@ -3,6 +3,33 @@
 Entradas mais recentes no topo. Formato definido em
 `.claude/skills/registrar-decisao/SKILL.md`.
 
+## 2026-09-29 — Código 36 confirmado: Extra 50% Noturna, Matriz e Filial
+
+**Contexto:** no arquivo real de tipo H (Ponto) da competência
+09/2026 enviado pelo usuário, apareceu o código de evento **36**
+("Extra 50%N"), que não estava em `config/clientes/art_latex.json`.
+Ficou registrado como `PENDENTE` até confirmação.
+
+**Decisão:** o usuário confirmou diretamente que o código 36 é
+**"Extra 50% Noturna"** e que vale para Matriz e Filial (mesmo padrão
+do código 50, HE 100% Noturna). Adicionado a
+`config/clientes/art_latex.json` nas duas unidades, tipo `hora`, com a
+mesma ressalva já usada para o código 50: continua sujeito ao
+bloqueio geral de eventos tipo Hora (`QuestorExporterH`), sem relação
+com esta confirmação — isso documenta o código, não libera exportação
+de tipo H. `.claude/rules/art-latex.md` atualizado com a tabela e a
+nota.
+
+**Evidência:** confirmação textual direta do usuário nesta conversa em
+2026-09-29 ("sim, esse é o mesmo evento. Vale para os dois."),
+respondendo à pergunta direta sobre o código 36 descoberto no arquivo
+real da competência 09/2026.
+
+**Impacto:** `config/clientes/art_latex.json` (evento 36 adicionado a
+filial e matriz) e `.claude/rules/art-latex.md` atualizados. Nenhuma
+mudança em código de exportação — `QuestorExporterH` continua
+bloqueado incondicionalmente.
+
 ## 2026-09-29 — Layout colunar CONFIRMADO com evidência real da própria ART LATEX (V e H)
 
 **Contexto:** até a entrada anterior (2026-09-28), a certificação do

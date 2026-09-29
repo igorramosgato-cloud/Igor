@@ -14,6 +14,12 @@
           "tipo": "hora",
           "observacao": "Código confirmado pelo usuário em 2026-09-18 como o mesmo código do evento equivalente na Matriz. Continua sujeito ao bloqueio geral de eventos tipo Hora (QuestorExporterH), sem relação com esta confirmação."
         },
+        {
+          "codigo": 36,
+          "descricao": "Extra 50% Noturna",
+          "tipo": "hora",
+          "observacao": "Código descoberto em arquivo real de importação (competência 09/2026) e confirmado pelo usuário em 2026-09-29 como o mesmo evento para Matriz e Filial. Continua sujeito ao bloqueio geral de eventos tipo Hora (QuestorExporterH), sem relação com esta confirmação."
+        },
         {"codigo": 1955, "descricao": "VR", "tipo": "valor"},
         {"codigo": 815, "descricao": "VT", "tipo": "valor"},
         {
@@ -30,6 +36,12 @@
     "matriz": {
       "eventos": [
         {"codigo": 50, "descricao": "HE 100% Noturna", "tipo": "hora"},
+        {
+          "codigo": 36,
+          "descricao": "Extra 50% Noturna",
+          "tipo": "hora",
+          "observacao": "Código descoberto em arquivo real de importação (competência 09/2026) e confirmado pelo usuário em 2026-09-29 como o mesmo evento para Matriz e Filial. Continua sujeito ao bloqueio geral de eventos tipo Hora (QuestorExporterH), sem relação com esta confirmação."
+        },
         {
           "codigo": 1524,
           "descricao": "Cesta Básica",
