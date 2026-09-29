@@ -135,19 +135,19 @@ def parse_arquivo_layout(conteudo_bruto: bytes) -> ArquivoLayout:
 # ---------------------------------------------------------------------------
 # Layout colunar multi-evento (mais de um evento no mesmo arquivo)
 #
-# Contrato confirmado por evidência física real em 2026-09-28: arquivo real
-# de OUTRO cliente (não ART LATEX), já aceito pelo Questor — usado aqui só
-# para certificar o CONTRATO FÍSICO GENÉRICO do sistema (mesmo raciocínio já
-# aplicado ao layout single-evento, certificado com um arquivo da Nova
-# Farma). Nenhum dado desse cliente (nome, contrato, valores) foi
-# reproduzido neste módulo ou em qualquer arquivo versionado — só a
-# ESTRUTURA do arquivo foi usada como evidência.
+# Contrato confirmado por evidência física real em 2026-09-28 (arquivo de
+# outro cliente, usado só para certificar o CONTRATO FÍSICO GENÉRICO do
+# sistema) e CONFIRMADO com evidência real da própria ART LATEX em
+# 2026-09-29 (dois arquivos reais, tipo V e tipo H, ambos já aceitos pelo
+# Questor — ver docs/DECISIONS.md). Nenhum dado desses clientes (nome,
+# contrato, valores) foi reproduzido neste módulo ou em qualquer arquivo
+# versionado — só a ESTRUTURA dos arquivos foi usada como evidência.
 #
 # O usuário confirmou explicitamente que a mesma lógica colunar vale tanto
-# para tipo H quanto para tipo V (ver docs/DECISIONS.md, 2026-09-28). Isso
-# SUBSTITUI a hipótese anterior de "blocos concatenados, um por evento" —
-# aquela hipótese não tinha evidência física e está formalmente incorreta
-# frente a este arquivo real.
+# para tipo H quanto para tipo V (ver docs/DECISIONS.md, 2026-09-28 e
+# 2026-09-29). Isso SUBSTITUI a hipótese anterior de "blocos concatenados,
+# um por evento" — aquela hipótese não tinha evidência física e está
+# formalmente incorreta frente aos arquivos reais.
 #
 # Estrutura confirmada:
 # - linha 1: "" ; "" ; <código evento 1> ; <código evento 2> ; ... (colunas

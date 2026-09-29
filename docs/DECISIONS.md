@@ -3,6 +3,71 @@
 Entradas mais recentes no topo. Formato definido em
 `.claude/skills/registrar-decisao/SKILL.md`.
 
+## 2026-09-29 — Layout colunar CONFIRMADO com evidência real da própria ART LATEX (V e H)
+
+**Contexto:** até a entrada anterior (2026-09-28), a certificação do
+layout colunar multi-evento usava evidência física real de **outro
+cliente** (não ART LATEX), com a ressalva explícita de que não havia
+confirmação com um arquivo da própria ART LATEX. O usuário enviou dois
+arquivos reais da própria ART LATEX, que ele mesmo fez, confirmando
+que a importação no Questor **deu certo este mês**:
+`Importacao_Questor_Ponto_ART_LATEX_FINAL_VALIDADO.csv` (tipo H) e
+`Importacao_Questor_Variaveis_ART_LATEX_FINAL_VALIDADO.csv` (tipo V).
+
+**Decisão:** os dois arquivos foram testados byte a byte contra o
+parser certificado em 2026-09-28
+(`questor_layout.parse_arquivo_layout_colunar`) e **passaram
+integralmente, sem qualquer alteração de código**. Isso eleva a
+certificação do layout colunar multi-evento de "evidência de outro
+cliente" para **evidência real confirmada da própria ART LATEX,
+aceita pelo Questor**.
+
+Achados específicos:
+
+1. **Arquivo Variáveis (V):** colunas 806, 813, 1524, 1955, 96 (nessa
+   ordem), 422 registros. Confirma exatamente a regra já certificada:
+   a coluna 1524 (Cesta) tem valor literal `"1"` em 100% das linhas
+   com lançamento (nunca outro número) — bate com a regra "R$ 1,00 por
+   colaborador listado" já registrada em 2026-09-17.
+2. **Arquivo Ponto (H):** colunas 23 (Dia Falta), 29 (Horas Atraso),
+   35 (Extra 50%D), 49 (Extra 100%D), 36 (Extra 50%N), 50 (Extra
+   100%N), 25 (Desconta DSR) — 299 registros. Esta é a **primeira
+   evidência física real de tipo H da ART LATEX** que o projeto já
+   teve (antes só regra de negócio confirmada verbalmente, nunca
+   arquivo físico).
+3. **Descoberta:** código de evento **36 = "Extra 50%N"** (Extra 50%
+   Noturno) aparece no arquivo real, com 2 registros preenchidos
+   (contratos 1472 e 56, valor `"2"` em ambos) — esse código **não
+   está** em `config/clientes/art_latex.json`. Fica registrado como
+   `PENDENTE` (código real observado, mas sem confirmação explícita do
+   usuário sobre a regra de negócio associada) — não foi inventado
+   nem adicionado à config sem confirmação.
+4. **Achado de encoding (não bloqueante):** a linha de rótulos do
+   arquivo V tem um artefato de mojibake duplo nos textos acentuados
+   (ex.: bytes que decodificam como "FarmÃ¡cia" em vez de "Farmácia")
+   — rastreado como um texto UTF-8 (`"á"`) que foi incorretamente
+   redecodificado/reencodificado como CP850 em algum ponto do processo
+   do usuário antes da submissão. Isso não impede a leitura estrutural
+   (rótulo é campo de texto livre, não validado por regra) e o Questor
+   aceitou o arquivo mesmo assim — não é uma pendência de código, só
+   uma observação para não confundir no futuro.
+5. Nenhuma coluna de padding trailing em nenhum dos dois arquivos
+   reais — confirma que a implementação (sem padding) está alinhada
+   com o uso real.
+
+Nenhuma mudança de código foi feita nesta entrada — só validação e
+atualização de confiança da evidência já registrada em 2026-09-28.
+
+**Evidência:** os dois arquivos reais enviados pelo usuário nesta
+conversa em 2026-09-29, com confirmação textual direta de que a
+importação deu certo este mês.
+
+**Impacto:** nenhuma alteração em `src/jrdp/questor_layout.py` (o
+código já certificado em 2026-09-28 passou no teste real sem qualquer
+ajuste). O código de evento 36 fica registrado como `PENDENTE` — não
+adicionado a `config/clientes/art_latex.json` até confirmação
+explícita do usuário sobre a regra de negócio.
+
 ## 2026-09-28 — CORREÇÃO: layout multi-evento é colunar, não blocos concatenados
 
 **Contexto:** a decisão anterior desta mesma data ("Arquivo de
