@@ -13,6 +13,14 @@ arquivos reais da própria ART LATEX, que ele mesmo fez, confirmando
 que a importação no Questor **deu certo este mês**:
 `Importacao_Questor_Ponto_ART_LATEX_FINAL_VALIDADO.csv` (tipo H) e
 `Importacao_Questor_Variaveis_ART_LATEX_FINAL_VALIDADO.csv` (tipo V).
+**Competência 09/2026** (confirmado pelo usuário) — ou seja, não é a
+mesma competência 08/2026 que o pipeline vem processando; serve como
+evidência de ESTRUTURA/CONTRATO FÍSICO, não como reconciliação de
+valores da competência 08/2026, e não resolve retroativamente a
+pendência de identidade do evento 96/08-2026 (a pessoa REJEITADA
+continua pendente para 08/2026 — o fato de 96 aparecer 100% resolvido
+no arquivo de 09/2026 é sobre outro mês, possivelmente com dados
+diferentes).
 
 **Decisão:** os dois arquivos foram testados byte a byte contra o
 parser certificado em 2026-09-28
